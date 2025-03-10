@@ -281,6 +281,11 @@ export const registerUser = asyncHandler(async (req: Request, res: Response, nex
         clinicId
     })
 
+
+    if (result && result.role === "Clinic Admin") {
+        await Doctor.create({ clinic: clinicId, doctor: result._id })
+    }
+
     const welcomeTemp = welcomeTemplate({ firstName, lastName, email, password })
 
     await sendEmail({
