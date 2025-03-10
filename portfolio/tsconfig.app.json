@@ -26,6 +26,6 @@
   },
   "include": [
     "src",
-    "../client/src/components/useDynamicForm.tsx"
+    "src/components/useDynamicForm.tsx"
   ]
 }
