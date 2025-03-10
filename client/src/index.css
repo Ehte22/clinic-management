@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.fs-14 {
+    font-size: 14px;
+}
+
+.chart-container {
+    height: 400px;
+    width: 100%;
+}
+
+canvas {
+    height: 100% !important;
+    width: 100% !important;
+}
