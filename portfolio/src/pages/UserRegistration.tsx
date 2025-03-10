@@ -1,5 +1,4 @@
 import { CheckCircleIcon } from "@heroicons/react/24/outline"
-import { useNavigate } from "react-router-dom"
 import { z } from "zod"
 import { FieldConfig } from "../models/fieldConfig.interface"
 import { useEffect, useState } from "react"
@@ -66,9 +65,6 @@ const defaultValues = {
 }
 
 const UserRegistration = () => {
-
-    // hooks
-    const navigate = useNavigate()
 
     // States
     const [OTP, setOTP] = useState("")
