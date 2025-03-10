@@ -146,7 +146,7 @@ const UserRegistration = () => {
             toast.showSuccess(registerData.message)
             localStorage.removeItem("clinicId")
             reset()
-            navigate(`${import.meta.env.VITE_BACKEND_URL}/login`)
+            window.location.href = `${import.meta.env.VITE_BACKEND_URL}/login`
         }
 
     }, [otpSendMessage, otpSendSuccess, otpVerifyMessage, otpVerifySuccess, registerData, registerSuccess])
