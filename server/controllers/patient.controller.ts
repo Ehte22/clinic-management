@@ -126,7 +126,7 @@ export const getAllAllPatient = asyncHandler(async (req: Request, res: Response)
         if (role === "Super Admin") {
             result = await Patient.find().populate('clinic')
         } else {
-            result = await Patient.find({ clinic: clinicId, createdAt: { $gte: startOfDay, $lte: endOfDay } }).populate('clinic')
+            result = await Patient.find({ clinic: clinicId, createdAt: { $gte: startOfDay, $lte: endOfDay }, isDeleted: false }).populate('clinic')
         }
     } else {
         result = await Patient.find(query).populate('clinic').skip(skip).limit(currentLimit);

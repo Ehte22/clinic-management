@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useCreatePrescriptionMutation } from "../../redux/apis/prescriptionApi";
-import { Patient, useTodayPatientsQuery } from "../../redux/apis/patientApi";
+import { Patient, useGetAllAllPatientQuery } from "../../redux/apis/patientApi";
 import { GETDATA, useGetAllMedicinesQuery } from "../../redux/apis/medicineApi";
 import { FieldConfig } from "../../models/fieldConfig.interface";
 import { toast } from "../../utils/toast";
@@ -56,9 +56,10 @@ const Prescription = () => {
     const [medicineData, setMedicineData] = useState<GETDATA>();
     const [patient, setPatient] = useState<Patient>()
 
+
     const [addPrescription, { isSuccess, isError, }] = useCreatePrescriptionMutation()
 
-    const { data: allPatients, isSuccess: patientGetSuccess } = useTodayPatientsQuery()
+    const { data: allPatients, isSuccess: patientGetSuccess } = useGetAllAllPatientQuery({ isFetchAll: true })
     const { data: allMedicines, isSuccess: medicineSuccess } = useGetAllMedicinesQuery({ isFetchAll: true })
 
     const fields: FieldConfig[] = [

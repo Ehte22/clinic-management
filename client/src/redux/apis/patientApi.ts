@@ -175,7 +175,6 @@ export const patientApi = createApi({
         params: search,
       }),
 
-      // transformResponse: (data: { result: Ipatient[] }) => data.result,
       transformErrorResponse: (error: { status: number; data: { message: string } }) => {
         return error.data?.message;
       },
@@ -187,8 +186,6 @@ export const patientApi = createApi({
         method: 'GET',
 
       }),
-      // transformResponse: (data: { result: Ipatient }) => data.result,
-      // transformResponse: (data: { result: Ipatient[] }) => data.result,
       providesTags: ['Patient'],
     }),
 
