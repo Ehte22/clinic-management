@@ -22,17 +22,18 @@ import { protectedRoute } from "./utils/protected";
 import { checkAndDeactivateExpiredClinics, checkSubscription, sendSubscriptionReminders } from "./utils/checkSubscription";
 import { app, server } from "./utils/socket";
 import paymentRouter from "./routes/payment.routes";
+import rateLimit from "express-rate-limit";
 
 dotenv.config()
 app.use(express.json())
 app.use(express.static("invoices"))
 app.use(morgan("dev"))
 
-// app.use(rateLimit({
-//     windowMs: 1000 * 60 * 15,
-//     max: 50,
-//     message: "We have received to many request from this IP. Please try after 15 minutes."
-// }))
+app.use(rateLimit({
+    windowMs: 1000 * 60 * 15,
+    max: 50,
+    message: "We have received to many request from this IP. Please try after 15 minutes."
+}))
 
 app.use(express.urlencoded({ extended: true }))
 app.use(cors({

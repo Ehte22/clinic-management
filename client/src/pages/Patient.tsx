@@ -12,7 +12,9 @@ import { idbHelpers } from "../indexDB";
 import { io } from "socket.io-client"
 import { format } from "date-fns";
 
-const socket = io(import.meta.env.VITE_BACKEND_URL)
+const socket = io(import.meta.env.VITE_BACKEND_URL, {
+    transports: ["polling"]
+})
 
 const defaultValues = {
     name: "",

@@ -12,7 +12,9 @@ import PrescriptionTable from "../../components/patient/PrescriptionTable";
 import { idbHelpers } from "../../indexDB";
 import { io } from "socket.io-client"
 
-const socket = io(import.meta.env.VITE_BACKEND_URL)
+const socket = io(import.meta.env.VITE_BACKEND_URL, {
+    transports: ["polling"]
+})
 
 const defaultValues = {
     patient: "",
