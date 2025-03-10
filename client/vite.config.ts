@@ -13,7 +13,7 @@ export default defineConfig({
       },
       strategies: "injectManifest",
       srcDir: "src",
-      filename: "service-worker.ts",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       injectManifest: {
         swSrc: "src/sw.ts",
