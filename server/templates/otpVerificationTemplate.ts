@@ -23,7 +23,7 @@ export const otpVerificationTemplate = (otp: string) => {
         }
 
         .header {
-            background-color: #4F46E5;
+            background-color: #0777de;
             color: white;
             text-align: center;
             padding: 30px 20px;
@@ -54,7 +54,7 @@ export const otpVerificationTemplate = (otp: string) => {
         .otp {
             font-size: 24px;
             font-weight: bold;
-            color: #4F46E5;
+            color: #0777de;
             margin-top: 20px;
         }
 

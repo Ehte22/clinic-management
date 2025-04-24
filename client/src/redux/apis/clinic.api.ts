@@ -1,6 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
-import { IClinic } from "../../models/clinic.interface"
 import { createCustomBaseQuery } from "./customBaseQuery.api"
+import { IPagination } from "../../models/pagination.interface"
+import { IClinic } from "../../models/clinic.interface"
 
 const baseUrl = `${import.meta.env.VITE_BACKEND_URL}/api/v1/clinic`
 const customBaseQuery = createCustomBaseQuery(baseUrl)
@@ -11,7 +12,7 @@ export const clinicApi = createApi({
     tagTypes: ["clinic"],
     endpoints: (builder) => {
         return {
-            getClinics: builder.query<{ result: IClinic[], totalPages: number }, Partial<{ page: number, limit: number, searchQuery: string, isFetchAll: boolean }>>({
+            getClinics: builder.query<{ result: IClinic[], pagination: IPagination }, Partial<{ page: number, limit: number, searchQuery: string, isFetchAll: boolean, selectedUser: string }>>({
                 query: (queryParams = {}) => {
                     return {
                         url: "/",
@@ -19,7 +20,7 @@ export const clinicApi = createApi({
                         params: queryParams
                     }
                 },
-                transformResponse: (data: { result: IClinic[], totalPages: number }) => {
+                transformResponse: (data: { result: IClinic[], pagination: IPagination }) => {
                     return data
                 },
                 transformErrorResponse: (error: { status: number, data: { message: string } }) => {
@@ -31,7 +32,7 @@ export const clinicApi = createApi({
             getClinicById: builder.query<IClinic, string>({
                 query: (id) => {
                     return {
-                        url: `/get-clinic/${id}`,
+                        url: `/${id}`,
                         method: "GET"
                     }
                 },
@@ -44,10 +45,10 @@ export const clinicApi = createApi({
                 providesTags: ["clinic"]
             }),
 
-            createClinic: builder.mutation<{ message: string, result: IClinic }, FormData>({
+            addClinic: builder.mutation<{ message: string, result: IClinic }, FormData>({
                 query: clinicData => {
                     return {
-                        url: "/create-clinic",
+                        url: "/add",
                         method: "POST",
                         body: clinicData
                     }
@@ -61,10 +62,10 @@ export const clinicApi = createApi({
                 invalidatesTags: ["clinic"]
             }),
 
-            updateClinic: builder.mutation<string, { clinicData: FormData, id: string }>({
-                query: ({ clinicData, id }) => {
+            updateClinic: builder.mutation<string, { id: string, clinicData: FormData }>({
+                query: ({ id, clinicData }) => {
                     return {
-                        url: `/update-clinic/${id}`,
+                        url: `/update/${id}`,
                         method: "PUT",
                         body: clinicData
                     }
@@ -78,12 +79,12 @@ export const clinicApi = createApi({
                 invalidatesTags: ["clinic"]
             }),
 
-            updateClinicStatus: builder.mutation<string, { status: string, id: string }>({
-                query: (statusData) => {
+            updateClinicStatus: builder.mutation<string, { id: string, status: string }>({
+                query: ({ id, status }) => {
                     return {
-                        url: `/update-status/${statusData.id}`,
+                        url: `/status/${id}`,
                         method: "PUT",
-                        body: statusData
+                        body: { status }
                     }
                 },
                 transformResponse: (data: { message: string }) => {
@@ -98,7 +99,7 @@ export const clinicApi = createApi({
             deleteClinic: builder.mutation<string, string>({
                 query: (id) => {
                     return {
-                        url: `/delete-clinic/${id}`,
+                        url: `/delete/${id}`,
                         method: "PUT",
                     }
                 },
@@ -118,7 +119,7 @@ export const clinicApi = createApi({
 export const {
     useGetClinicsQuery,
     useGetClinicByIdQuery,
-    useCreateClinicMutation,
+    useAddClinicMutation,
     useUpdateClinicMutation,
     useUpdateClinicStatusMutation,
     useDeleteClinicMutation

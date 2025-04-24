@@ -7,7 +7,7 @@ import { useGetAllAllPatientQuery } from '../../redux/apis/patientApi';
 import { useSearchDoctorQuery } from '../../redux/apis/doctor.api';
 import { FieldConfig } from '../../models/fieldConfig.interface';
 import { customValidator } from '../../utils/validator';
-import useDynamicForm from '../../components/useDynamicForm';
+import useDynamicForm from '../../hooks/useDynamicForm';
 import { toast } from '../../utils/toast';
 import { idbHelpers } from '../../indexDB';
 

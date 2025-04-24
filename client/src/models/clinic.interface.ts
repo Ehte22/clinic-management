@@ -15,7 +15,7 @@ export interface IClinic {
     subscription: number;
     logo?: string;
     registrationNumber?: number;
-    status?: boolean;
+    status?: string;
     deletedAt?: Date | null
     id?: string
 }

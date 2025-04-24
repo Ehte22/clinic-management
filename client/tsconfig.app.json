@@ -27,6 +27,6 @@
   },
   "include": [
     "src",
-    "src/components/useDynamicForm.tsx"
+    "src/hooks/useDynamicForm.tsx"
   ]
 }

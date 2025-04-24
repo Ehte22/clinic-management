@@ -452,7 +452,7 @@ import { z } from "zod";
 import { FieldConfig } from "../../models/fieldConfig.interface";
 import { IInvoice, useAddInvoiceMutation, useGetInvoiceByIdQuery, useUpdateInvoiceMutation } from "../../redux/apis/invoiceApi";
 import { customValidator } from "../../utils/validator";
-import useDynamicForm from "../../components/useDynamicForm";
+import useDynamicForm from "../../hooks/useDynamicForm";
 import { IData, useGetAppointmentsQuery } from "../../redux/apis/appointment.api";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "../../utils/toast";

@@ -1,49 +1,7 @@
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { createCustomBaseQuery } from "./customBaseQuery.api";
-
-export interface Medicine {
-  _id?: string;
-  medicineName: string;
-  // manufacturer: string;
-  expiryDate: string;
-  stock: number;
-  // batchNumber: string;
-  mg: number;
-  price: number;
-  // discount: number;
-  supplier: string;
-  // purchasedPrice: number;
-  quantity: number;
-  category: string;
-  label: string;
-  clinicId: string;
-  medicineType: string;
-}
-
-
-export interface GETDATA {
-  result: Medicine[];
-  message: string;
-  pagination: {
-    total: number,
-    page: number,
-    limit: number,
-    totalPages: number
-  }
-}
-export interface GETDATA2 {
-  result: Medicine;
-  message: string;
-
-}
-export interface ISellMed {
-  pId: any,
-  medicines: {
-    mId: string,
-    qty: number
-  }
-
-}
+import { createApi } from "@reduxjs/toolkit/query/react"
+import { createCustomBaseQuery } from "./customBaseQuery.api"
+import { IPagination } from "../../models/pagination.interface"
+import { IMedicine } from "../../models/medicine.interface"
 
 const baseUrl = `${import.meta.env.VITE_BACKEND_URL}/api/v1/medicine`
 const customBaseQuery = createCustomBaseQuery(baseUrl)
@@ -51,73 +9,118 @@ const customBaseQuery = createCustomBaseQuery(baseUrl)
 export const medicineApi = createApi({
   reducerPath: "medicineApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Medicine"],
-  endpoints: (builder) => ({
+  tagTypes: ["medicine"],
+  endpoints: (builder) => {
+    return {
+      getMedicines: builder.query<{ result: IMedicine[], pagination: IPagination }, Partial<{ page: number, limit: number, searchQuery: string, isFetchAll: boolean, selectedClinic: string }>>({
+        query: (queryParams = {}) => {
+          return {
+            url: "/",
+            method: "GET",
+            params: queryParams
+          }
+        },
+        transformResponse: (data: { result: IMedicine[], pagination: IPagination }) => {
+          return data
+        },
+        transformErrorResponse: (error: { status: number, data: { message: string } }) => {
+          return error.data?.message
+        },
+        providesTags: ["medicine"]
+      }),
 
-    getAllMedicines: builder.query<GETDATA, Partial<{ page: number, limit: number, filter: string, isFetchAll: boolean, selectedClinicId: string }>>({
-      query: (queryParams = {}) => ({
-        url: "/get-medicine",
-        method: "GET",
-        params: queryParams
+      getMedicineById: builder.query<IMedicine, string>({
+        query: (id) => {
+          return {
+            url: `/${id}`,
+            method: "GET"
+          }
+        },
+        transformResponse: (data: { result: IMedicine }) => {
+          return data.result
+        },
+        transformErrorResponse: (error: { status: number, data: { message: string } }) => {
+          return error.data?.message
+        },
+        providesTags: ["medicine"]
       }),
-      transformResponse: (data: GETDATA) => {
-        return data
-      },
-      providesTags: ["Medicine"],
-    }),
-    getSingleMedicine: builder.query<Medicine, string>({
-      query: (id) => ({
-        url: `/get-single-medicine/${id}`,
-        method: "GET",
 
+      addMedicine: builder.mutation<{ message: string, result: IMedicine }, IMedicine>({
+        query: medicineData => {
+          return {
+            url: "/add",
+            method: "POST",
+            body: medicineData
+          }
+        },
+        transformResponse: (data: { message: string, result: IMedicine }) => {
+          return data
+        },
+        transformErrorResponse: (error: { status: number, data: { message: string } }) => {
+          return error.data?.message
+        },
+        invalidatesTags: ["medicine"]
       }),
-      transformResponse: (data: GETDATA2) => {
-        return data.result
-      },
-      providesTags: ["Medicine"],
-    }),
-    addMedicine: builder.mutation<void, Medicine>({
-      query: (invoiceData) => ({
-        url: "/add-medicine",
-        method: "POST",
-        body: invoiceData,
-      }),
-      invalidatesTags: ["Medicine"],
-    }),
-    deleteMedicine: builder.mutation<void, { id: string }>({
-      query: (id) => ({
-        url: `/delete-medicine/${id}`,
-        method: "DELETE",
 
+      updateMedicine: builder.mutation<string, { id: string, medicineData: IMedicine }>({
+        query: ({ id, medicineData }) => {
+          return {
+            url: `/update/${id}`,
+            method: "PUT",
+            body: medicineData
+          }
+        },
+        transformResponse: (data: { message: string }) => {
+          return data.message
+        },
+        transformErrorResponse: (error: { status: number, data: { message: string } }) => {
+          return error.data?.message
+        },
+        invalidatesTags: ["medicine"]
       }),
-      invalidatesTags: ["Medicine"],
-    }),
-    updateMedicine: builder.mutation<void, Medicine>({
-      query: (data) => ({
-        url: `/update-medicine/${data._id}`,
-        method: "PUT",
-        body: data
 
+      updateMedicineStatus: builder.mutation<string, { id: string, status: string }>({
+        query: ({ id, status }) => {
+          return {
+            url: `/status/${id}`,
+            method: "PUT",
+            body: { status }
+          }
+        },
+        transformResponse: (data: { message: string }) => {
+          return data.message
+        },
+        transformErrorResponse: (error: { status: number, data: { message: string } }) => {
+          return error.data?.message
+        },
+        invalidatesTags: ["medicine"]
       }),
-      invalidatesTags: ["Medicine"],
-    }),
-    sellMedicine: builder.mutation<void, ISellMed>({
-      query: (data) => ({
-        url: `/sell-medicine`,
-        method: "POST",
-        body: data
 
+      deleteMedicine: builder.mutation<string, string>({
+        query: (id) => {
+          return {
+            url: `/delete/${id}`,
+            method: "PUT",
+          }
+        },
+        transformResponse: (data: { message: string }) => {
+          return data.message
+        },
+        transformErrorResponse: (error: { status: number, data: { message: string } }) => {
+          return error.data?.message
+        },
+        invalidatesTags: ["medicine"]
       }),
-      invalidatesTags: ["Medicine"],
-    }),
-  }),
-});
+
+    }
+  }
+})
 
 export const {
-  useGetAllMedicinesQuery,
+  useGetMedicinesQuery,
+  useGetMedicineByIdQuery,
   useAddMedicineMutation,
-  useDeleteMedicineMutation,
   useUpdateMedicineMutation,
-  useGetSingleMedicineQuery,
-  useSellMedicineMutation
-} = medicineApi;
+  useUpdateMedicineStatusMutation,
+  useDeleteMedicineMutation
+} = medicineApi

@@ -1,18 +1,17 @@
 
 import { ColumnDef, PaginationState } from '@tanstack/react-table';
-import TableData from '../TableData';
+import TableData from '../../components/TableData';
 import { useDeletePatientMutation, useGetAllAllPatientQuery } from '../../redux/apis/patientApi';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from "react";
-import Loader from '../Loader';
 import { idbHelpers } from '../../indexDB';
 import { useDebounce } from '../../utils/useDebounce';
-import ClinicSelector from '../ClinicSelector';
+import ClinicSelector from '../../components/ClinicSelector';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
+import Loader from '../../components/Loader';
 
-const PatientTable = () => {
-
+const Patients = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [tableData, setTableData] = useState<any[]>([])
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
@@ -82,14 +81,6 @@ const PatientTable = () => {
       cell: (info) => info.getValue(),
       header: 'Weight',
     },
-    // {
-    //   header: "Status",
-    //   accessorKey: "status",
-    //   cell: (info) => {
-    //     const row = info.row.original
-
-    //   },
-    // },
     {
       header: "Actions",
       cell: (info) => {
@@ -123,9 +114,9 @@ const PatientTable = () => {
   }, [isSuccess, searchData]);
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen -mt-20">
-      <Loader size={16} />
-    </div>
+    return <>
+      <Loader />
+    </>
   }
 
 
@@ -190,7 +181,7 @@ const PatientTable = () => {
 
 
 
-export default PatientTable
+export default Patients
 
 
 

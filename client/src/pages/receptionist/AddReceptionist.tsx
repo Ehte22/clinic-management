@@ -1,16 +1,14 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { z } from "zod";
-import { FieldConfig } from "../../models/fieldConfig.interface";
 import { customValidator } from "../../utils/validator";
 import { useAddReceptionistMutation, useGetReceptionistByIdQuery, useUpdateReceptionistMutation } from "../../redux/apis/receptionistApi";
-import useDynamicForm from "../../components/useDynamicForm";
+import useDynamicForm, { FieldConfig } from "../../hooks/useDynamicForm";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "../../utils/toast";
 import { useSendOTPMutation, useVerifyOTPMutation } from "../../redux/apis/auth.api";
-import { ImagePreviewContext } from "../../App";
 import { CheckCircleIcon } from "@heroicons/react/16/solid";
 import { idbHelpers } from "../../indexDB";
-import Loader from "../../components/Loader";
+import { useImagePreview } from "../../context/ImageContext";
 
 export interface Receptionist {
     _id: string;
@@ -33,7 +31,7 @@ const AddReceptionist: React.FC = () => {
     })
     type FormValues = z.infer<typeof schema>
     const navigate = useNavigate()
-    const { setPreviewImages } = useContext(ImagePreviewContext)
+    const { setPreviewImages } = useImagePreview()
     const [sendOtp, { data: otpSendMessage, error: otpSendErrorMessage, isSuccess: otpSendSuccess, isError: otpSendError }] = useSendOTPMutation()
     const [verifyOtp, { data: otpVerifyMessage, error: otpVerifyErrorMessage, isSuccess: otpVerifySuccess, isError: otpVerifyError }] = useVerifyOTPMutation()
 
@@ -243,11 +241,7 @@ const AddReceptionist: React.FC = () => {
             toast.showSuccess("Receptionist Update successfully!")
         }
     }, [isSuccess, isSuccessUpdate])
-    if (isLoadingReceptionists) {
-        return <div className="flex justify-center items-center h-screen -mt-20">
-            <Loader size={16} />
-        </div>
-    }
+
     return (
         <div className="grid grid-cols-1 gap-x-8 gap-y-8">
             <div className="flex justify-between">

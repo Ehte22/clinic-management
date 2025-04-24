@@ -1,4 +1,4 @@
-import { IFieldProps } from "./useDynamicForm";
+import { IFieldProps } from "../hooks/useDynamicForm";
 
 const Checkboxes: React.FC<IFieldProps> = ({ controllerField, field }) => {
     return (

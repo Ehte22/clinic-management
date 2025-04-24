@@ -2,15 +2,15 @@
 import { useEffect, useState } from "react";
 import { useCreatePrescriptionMutation } from "../../redux/apis/prescriptionApi";
 import { Patient, useGetAllAllPatientQuery } from "../../redux/apis/patientApi";
-import { GETDATA, useGetAllMedicinesQuery } from "../../redux/apis/medicineApi";
-import { FieldConfig } from "../../models/fieldConfig.interface";
 import { toast } from "../../utils/toast";
 import { customValidator } from "../../utils/validator";
-import useDynamicForm from "../../components/useDynamicForm";
+import useDynamicForm, { FieldConfig } from "../../hooks/useDynamicForm";
 import Modal from "./Modal";
 import PrescriptionTable from "../../components/patient/PrescriptionTable";
 import { idbHelpers } from "../../indexDB";
 import { io } from "socket.io-client"
+import { IMedicine } from "../../models/medicine.interface";
+import { useGetMedicinesQuery } from "../../redux/apis/medicineApi";
 
 const socket = io(import.meta.env.VITE_BACKEND_URL, {
     transports: ["polling"]
@@ -53,14 +53,14 @@ const Prescription = () => {
     const [medicineOptions, setMedicineOptions] = useState<{ label: string, value: string, disabled?: boolean }[]>([
         { label: "Select Doctor Name", value: "", disabled: true }
     ]);
-    const [medicineData, setMedicineData] = useState<GETDATA>();
+    const [medicineData, setMedicineData] = useState<IMedicine>();
     const [patient, setPatient] = useState<Patient>()
 
 
     const [addPrescription, { isSuccess, isError, }] = useCreatePrescriptionMutation()
 
     const { data: allPatients, isSuccess: patientGetSuccess } = useGetAllAllPatientQuery({ isFetchAll: true })
-    const { data: allMedicines, isSuccess: medicineSuccess } = useGetAllMedicinesQuery({ isFetchAll: true })
+    const { data: allMedicines, isSuccess: medicineSuccess } = useGetMedicinesQuery({ isFetchAll: true })
 
     const fields: FieldConfig[] = [
         {
@@ -117,7 +117,7 @@ const Prescription = () => {
                         { label: "Evening", value: "Evening", className: "col-span-6 sm:col-span-3" },
                         { label: "Night", value: "Night", className: "col-span-6 sm:col-span-3" },
                     ],
-                    rules: { required: true, checkbox: true },
+                    rules: { required: true, array: true },
                 },
 
                 {
@@ -295,7 +295,7 @@ const Prescription = () => {
 
     useEffect(() => {
         if (allMedicines) {
-            setMedicineData(allMedicines)
+            setMedicineData(allMedicines as any)
         }
     }, [allMedicines, medicineData])
 

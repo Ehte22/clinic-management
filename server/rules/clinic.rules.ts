@@ -11,7 +11,7 @@ export const createClinicRules: validationRulesSchema = {
     state: { required: true },
     street: { required: true },
     country: { required: true },
-    amount: { required: true, type: "number" },
+    amount: { required: true },
     logo: { required: false },
     status: { required: false },
 }

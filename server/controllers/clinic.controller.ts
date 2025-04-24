@@ -32,22 +32,29 @@ export const getClinics = asyncHandler(async (req: Request, res: Response, next:
         }
         : {}
 
-    const totalClinics = await Clinic.countDocuments(query)
-    const totalPages = Math.ceil(totalClinics / pageLimit)
+    const totalEntries = await Clinic.countDocuments(query)
+    const totalPages = Math.ceil(totalEntries / pageLimit)
 
     let result = []
     if (isFetchAll) {
-        result = await Clinic.find().lean()
+        result = await Clinic.find().sort({ createdAt: -1 }).lean()
     } else {
-        result = await Clinic.find(query).skip(skip).limit(pageLimit).lean()
+        result = await Clinic.find(query).sort({ createdAt: -1 }).skip(skip).limit(pageLimit).lean()
+    }
+
+    const pagination = {
+        page: currentPage,
+        limit: pageLimit,
+        totalEntries,
+        totalPages
     }
 
     await redisClient.setex(
         cacheKey,
         3600,
-        JSON.stringify({ message: "Clinics fetch successfully", result, totalPages, totalClinics })
+        JSON.stringify({ message: "Clinics fetch successfully", result, pagination })
     )
-    res.status(200).json({ message: "Clinics fetch successfully", result, totalPages, totalClinics })
+    res.status(200).json({ message: "Clinics fetch successfully", result, pagination })
 })
 
 // Get Clinic By Id

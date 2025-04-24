@@ -16,7 +16,7 @@ import { Clinic } from "../models/Clinic"
 
 // Get All Users
 export const getAllUsers = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { page = 1, limit = 10, searchQuery = "", isFetchAll = false, selectedClinicId = "" } = req.query
+    const { page = 1, limit = 10, searchQuery = "", isFetchAll = false, selectedClinic = "" } = req.query
 
     const sortedQuery = JSON.stringify(Object.fromEntries(Object.entries(req.query).sort()))
     const cacheKey = `users:${sortedQuery}`
@@ -42,26 +42,33 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response, next
         ]
     }
 
-    if (selectedClinicId) {
-        query.clinicId = selectedClinicId
+    if (selectedClinic) {
+        query.clinicId = selectedClinic
     }
 
-    const totalUsers = await User.countDocuments(query)
-    const totalPages = Math.ceil(totalUsers / pageLimit)
+    const totalEntries = await User.countDocuments(query)
+    const totalPages = Math.ceil(totalEntries / pageLimit)
 
     let result = []
     if (isFetchAll) {
-        result = await User.find().select("-password -__v").lean()
+        result = await User.find().sort({ createdAt: -1 }).select("-password -__v").lean()
     } else {
-        result = await User.find(query).select("-password -__v").skip(skip).limit(pageLimit).lean()
+        result = await User.find(query).sort({ createdAt: -1 }).select("-password -__v").skip(skip).limit(pageLimit).lean()
+    }
+
+    const pagination = {
+        page: currentPage,
+        limit: pageLimit,
+        totalEntries,
+        totalPages
     }
 
     await redisClient.setex(
         cacheKey,
         3600,
-        JSON.stringify({ message: "Users Fetch successfully", result, totalPages, totalUsers })
+        JSON.stringify({ message: "Users Fetch successfully", result, pagination })
     )
-    res.status(200).json({ message: "Users Fetch successfully", result, totalPages, totalUsers })
+    res.status(200).json({ message: "Users Fetch successfully", result, pagination })
 })
 
 // Get Clinic By Id

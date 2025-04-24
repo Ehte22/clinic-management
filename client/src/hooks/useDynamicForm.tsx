@@ -2,14 +2,39 @@ import { useForm, Controller, FieldValues, DefaultValues, Path, UseFormSetValue,
 import { ZodSchema } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import Inputs from "../../../client/src/components/Inputs";
-import Selects from "../../../client/src/components/Selects";
-import Radios from "../../../client/src/components/Radios";
-import Checkboxes from "../../../client/src/components/Checkboxes";
-import InputFile from "../../../client/src/components/InputFile";
-import Textarea from "../../../client/src/components/Textarea";
-import { FieldConfig } from "../../../client/src/models/fieldConfig.interface";
-import SearchSelect from "../../../client/src/components/SearchSelect";
+import Inputs from "../components/Inputs";
+import Selects from "../components/Selects";
+import Radios from "../components/Radios";
+import Checkboxes from "../components/Checkboxes";
+import InputFile from "../components/InputFile";
+import Textarea from "../components/Textarea";
+import { ValidationRules } from "../utils/validator";
+import AutoComplete from "../components/AutoComplete";
+import DateField from "../components/DateField";
+import { InputLabel, Typography } from "@mui/material";
+
+export interface FieldConfig {
+    name: string;
+    label?: string;
+    type: "text" | "password" | "email" | "number" | "color" | "range" | "date" | "time" | "select" | "radio" | "checkbox" | "file" | "textarea" | "formGroup" | "formArray" | "submit" | "autoComplete";
+    placeholder?: string;
+    options?: { name?: string | number, label?: string; value?: string | number, description?: string | number, disabled?: boolean, className?: string }[];
+    className?: string
+    size?: { xs?: number; sm?: number; md?: number; lg?: number; xl?: number }
+    accept?: string
+    multiple?: boolean
+    displayName?: string
+    legend?: string
+    text?: string
+    rows?: number
+    cols?: number
+    formArray?: FieldConfig[],
+    formGroup?: {
+        [key: string]: FieldConfig
+    },
+    object?: boolean
+    rules: ValidationRules
+}
 
 export interface IFieldProps {
     controllerField: ControllerRenderProps<any, any>,
@@ -88,9 +113,9 @@ const useDynamicForm = <T extends FieldValues>({
 
         return <>
             <div key={field.name}>
-                <label htmlFor={field.name} className="block text-sm/6 font-medium text-gray-900">
+                <InputLabel htmlFor={field.name} sx={{ fontWeight: 500, color: "black", my: 1 }}>
                     {field.label}
-                </label>
+                </InputLabel>
                 <Controller
                     key={field.name}
                     name={field.name as Path<T>}
@@ -103,7 +128,6 @@ const useDynamicForm = <T extends FieldValues>({
                             case "number":
                             case "color":
                             case "range":
-                            case "date":
                             case "time":
                                 return <>
                                     <Inputs
@@ -113,14 +137,26 @@ const useDynamicForm = <T extends FieldValues>({
                                         disabled={disabledFields.includes(field.name)} />
                                 </>
 
-                            case "select":
+                            case "date":
                                 return <>
-                                    <Selects controllerField={controllerField} field={field} />
+                                    <DateField
+                                        controllerField={controllerField}
+                                        field={field}
+                                        errors={errors[field.name as keyof T]?.message?.toString()} />
                                 </>
 
-                            case "searchSelect":
+                            case "select":
                                 return <>
-                                    <SearchSelect controllerField={controllerField} field={field} />
+                                    <Selects controllerField={controllerField} field={field} errors={errors[field.name as keyof T]?.message?.toString()} />
+                                </>
+
+                            case "autoComplete":
+                                return <>
+                                    <AutoComplete
+                                        controllerField={controllerField}
+                                        field={field}
+                                        errors={errors[field.name as keyof T]?.message?.toString()}
+                                    />
                                 </>
 
                             case "radio":
@@ -139,12 +175,17 @@ const useDynamicForm = <T extends FieldValues>({
                                         controllerField={controllerField}
                                         field={field}
                                         setValue={setValue}
+                                        errors={errors[field.name as keyof T]?.message?.toString()}
                                     />
                                 </>
 
                             case "textarea":
                                 return <>
-                                    <Textarea controllerField={controllerField} field={field} />
+                                    <Textarea
+                                        controllerField={controllerField}
+                                        field={field}
+                                        errors={errors[field.name as keyof T]?.message?.toString()}
+                                    />
                                 </>
 
                             case "formGroup":
@@ -155,6 +196,12 @@ const useDynamicForm = <T extends FieldValues>({
                                             {field.formGroup &&
                                                 Object.entries(field.formGroup).map(([_, subField]) => {
                                                     const fieldName = `${field.name}.${subField.name}`;
+                                                    const error = errors[field.name] &&
+                                                        (errors[field.name] as Record<string, any>)[subField.name]?.message && (
+                                                            <Typography variant="caption" color="error">
+                                                                {(errors[field.name] as Record<string, any>)[subField.name]?.message}
+                                                            </Typography>
+                                                        )
 
                                                     return (
                                                         <div key={fieldName} className={`${subField.className}`}>
@@ -174,30 +221,35 @@ const useDynamicForm = <T extends FieldValues>({
                                                                         case "number":
                                                                         case "color":
                                                                         case "range":
-                                                                        case "date":
                                                                         case "time":
                                                                             return <>
                                                                                 <Inputs
                                                                                     controllerField={controllerField}
                                                                                     field={subField}
-                                                                                    errors={
-                                                                                        errors[field.name] &&
-                                                                                        (errors[field.name] as Record<string, any>)[subField.name]?.message && (
-                                                                                            <span className="my-2 text-sm text-red-600">
-                                                                                                {(errors[field.name] as Record<string, any>)[subField.name]?.message}
-                                                                                            </span>
-                                                                                        )
-                                                                                    } />
+                                                                                    errors={error}
+                                                                                    disabled={disabledFields.includes(subField.name)} />
+                                                                            </>
+
+                                                                        case "date":
+                                                                            return <>
+                                                                                <DateField
+                                                                                    controllerField={controllerField}
+                                                                                    field={subField}
+                                                                                    errors={errors[subField.name as keyof T]?.message?.toString()} />
                                                                             </>
 
                                                                         case "select":
                                                                             return <>
-                                                                                <Selects controllerField={controllerField} field={subField} />
+                                                                                <Selects controllerField={controllerField} field={subField} errors={error} />
                                                                             </>
 
-                                                                        case "searchSelect":
+                                                                        case "autoComplete":
                                                                             return <>
-                                                                                <SearchSelect controllerField={controllerField} field={subField} />
+                                                                                <AutoComplete
+                                                                                    controllerField={controllerField}
+                                                                                    field={subField}
+                                                                                    errors={error}
+                                                                                />
                                                                             </>
 
                                                                         case "radio":
@@ -216,12 +268,17 @@ const useDynamicForm = <T extends FieldValues>({
                                                                                     controllerField={controllerField}
                                                                                     field={subField}
                                                                                     setValue={setValue}
+                                                                                    errors={error}
                                                                                 />
                                                                             </>
 
                                                                         case "textarea":
                                                                             return <>
-                                                                                <Textarea controllerField={controllerField} field={subField} />
+                                                                                <Textarea
+                                                                                    controllerField={controllerField}
+                                                                                    field={subField}
+                                                                                    errors={error}
+                                                                                />
                                                                             </>
                                                                         default:
                                                                             return <></>;
@@ -230,10 +287,11 @@ const useDynamicForm = <T extends FieldValues>({
                                                             />
                                                             {errors[field.name] &&
                                                                 (errors[field.name] as Record<string, any>)[subField.name]?.message && (
-                                                                    <span className="my-2 text-sm text-red-600">
+                                                                    <Typography variant="caption" color="error">
                                                                         {(errors[field.name] as Record<string, any>)[subField.name]?.message}
-                                                                    </span>
+                                                                    </Typography>
                                                                 )}
+
 
                                                         </div>
                                                     );
@@ -251,6 +309,11 @@ const useDynamicForm = <T extends FieldValues>({
                                                     {field.formArray?.map((subField) => {
 
                                                         const fieldName = `${field.name}[${index}].${subField.name}`;
+                                                        const error = (getErrorMessage(field.name, index, subField.name, errors)) && (
+                                                            <Typography variant="caption" color="error">
+                                                                {getErrorMessage(field.name, index, subField.name, errors)}
+                                                            </Typography>
+                                                        )
 
                                                         return (
                                                             <div
@@ -274,28 +337,36 @@ const useDynamicForm = <T extends FieldValues>({
                                                                             case "number":
                                                                             case "color":
                                                                             case "range":
-                                                                            case "date":
                                                                             case "time":
                                                                                 return <>
                                                                                     <Inputs
                                                                                         controllerField={controllerField}
                                                                                         field={subField}
-                                                                                        errors={(getErrorMessage(field.name, index, subField.name, errors)) && (
-                                                                                            <span className="my-2 text-sm text-red-600">
-                                                                                                {getErrorMessage(field.name, index, subField.name, errors)}
-                                                                                            </span>
-                                                                                        )}
+                                                                                        errors={error}
+                                                                                    />
+                                                                                </>
+
+                                                                            case "date":
+                                                                                return <>
+                                                                                    <DateField
+                                                                                        controllerField={controllerField}
+                                                                                        field={subField}
+                                                                                        errors={error}
                                                                                     />
                                                                                 </>
 
                                                                             case "select":
                                                                                 return <>
-                                                                                    <Selects controllerField={controllerField} field={subField} />
+                                                                                    <Selects controllerField={controllerField} field={subField} errors={error} />
                                                                                 </>
 
-                                                                            case "searchSelect":
+                                                                            case "autoComplete":
                                                                                 return <>
-                                                                                    <SearchSelect controllerField={controllerField} field={subField} />
+                                                                                    <AutoComplete
+                                                                                        controllerField={controllerField}
+                                                                                        field={subField}
+                                                                                        errors={error}
+                                                                                    />
                                                                                 </>
 
                                                                             case "radio":
@@ -314,12 +385,17 @@ const useDynamicForm = <T extends FieldValues>({
                                                                                         controllerField={controllerField}
                                                                                         field={subField}
                                                                                         setValue={setValue}
+                                                                                        errors={error}
                                                                                     />
                                                                                 </>
 
                                                                             case "textarea":
                                                                                 return <>
-                                                                                    <Textarea controllerField={controllerField} field={subField} />
+                                                                                    <Textarea
+                                                                                        controllerField={controllerField}
+                                                                                        field={subField}
+                                                                                        errors={error}
+                                                                                    />
                                                                                 </>
 
                                                                             default:
@@ -386,9 +462,9 @@ const useDynamicForm = <T extends FieldValues>({
                 />
                 <div>
                     {errors[field.name as keyof T]?.message && (
-                        <p className="my-2 text-sm text-red-600">
+                        <Typography variant="caption" color="error">
                             {errors[field.name as keyof T]?.message?.toString()}
-                        </p>
+                        </Typography>
                     )}
                 </div>
             </div >

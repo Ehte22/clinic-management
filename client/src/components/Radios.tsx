@@ -1,5 +1,5 @@
 import React from 'react'
-import { IFieldProps } from './useDynamicForm'
+import { IFieldProps } from '../hooks/useDynamicForm'
 
 const Radios: React.FC<IFieldProps> = ({ controllerField, field }) => {
     return <>

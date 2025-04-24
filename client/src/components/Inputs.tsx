@@ -1,33 +1,61 @@
-import React from 'react'
-import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
-import { IFieldProps } from './useDynamicForm';
+import React from "react";
+import TextField from "@mui/material/TextField";
+import { IFieldProps } from "../hooks/useDynamicForm";
+import { Paper, Stack } from "@mui/material";
+
+export const textFieldStyles = {
+    '& .MuiOutlinedInput-root': {
+        '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'transparent',
+        },
+        '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'transparent',
+        },
+        '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'transparent',
+        },
+        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            border: '1px solid #0772ed',
+        },
+        '& .MuiSvgIcon-root': {
+            color: '#0772ed',
+        },
+        '& .MuiInputBase-root': {
+            color: '#0772ed',
+        },
+        '& input:-webkit-autofill': {
+            WebkitBoxShadow: '0 0 0 100px #f0f6ff inset',
+            WebkitTextFillColor: '#000',
+        }
+    },
+    '& .MuiInputLabel-root': {
+        color: 'gray',
+    },
+    '& .MuiInputLabel-root.Mui-focused': {
+        color: '#0772ed',
+    },
+};
 
 const Inputs: React.FC<IFieldProps> = ({ controllerField, field, errors, disabled }) => {
-    const isError = Boolean(errors)
+    const isError = Boolean(errors);
 
     return <>
-        <div className='mt-2'>
-            <div className={isError ? "mt-2 grid grid-cols-1" : ""}>
-                <input
+        <Paper >
+            <Stack>
+                <TextField
                     {...controllerField}
                     type={field.type}
-                    className={isError
-                        ? "col-start-1 row-start-1 block w-full rounded-md bg-white py-1.5 pl-3 pr-10 text-base text-red-900 outline outline-1 -outline-offset-1 outline-red-300 placeholder:text-red-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-red-600 sm:pr-9 sm:text-sm/6"
-                        : `block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${field.className}`}
-                    placeholder={field.placeholder}
                     id={field.name}
+                    label={field.placeholder}
+                    variant="outlined"
+                    sx={textFieldStyles}
+                    fullWidth
+                    error={isError}
                     disabled={disabled}
                 />
-                {isError && <ExclamationCircleIcon
-                    aria-hidden="true"
-                    className="pointer-events-none col-start-1 row-start-1 mr-3 size-5 self-center justify-self-end text-red-500 sm:size-4"
-                />}
-            </div>
-            <p id={field.name} className="mt-2 text-sm text-gray-500">
-                {field.text}
-            </p>
-        </div>
+            </Stack>
+        </Paper>
     </>
-}
+};
 
-export default Inputs
+export default Inputs;

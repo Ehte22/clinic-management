@@ -1,6 +1,22 @@
 import { z } from "zod"
-import { ValidationRules } from "../models/validationRules.interface";
-import { FieldConfig } from "../models/fieldConfig.interface";
+import { FieldConfig } from "../hooks/useDynamicForm";
+
+export interface ValidationRules {
+    required?: boolean;
+    file?: boolean;
+    array?: boolean;
+    object?: boolean
+    accept?: string[];
+    maxSize?: number;
+    email?: boolean;
+    pattern?: RegExp;
+    patternMessage?: string
+    min?: number;
+    max?: number;
+    number?: boolean
+    label?: string
+};
+
 
 export interface ExtractedRule {
     name: string
@@ -63,7 +79,7 @@ const generateSchema = (fieldLabel: string, rules: ValidationRules) => {
                 message: `${fieldLabel} must be smaller than ${rules.maxSize}MB`,
             });
         }
-    } else if (rules.checkbox) {
+    } else if (rules.array) {
         schema = z.union([
             z.array(z.string()),
             z.array(z.number()),
@@ -172,7 +188,7 @@ export const customValidator = (fields: FieldConfig[]) => {
             if (!item.formArray && !item.formGroup) {
                 return {
                     name: item.name,
-                    label: item.label?.toLowerCase(),
+                    label: item.placeholder?.toLowerCase(),
                     rules: item.rules,
                 };
             }
@@ -182,13 +198,13 @@ export const customValidator = (fields: FieldConfig[]) => {
                 Object.values(item.formGroup).forEach((nestedField) => {
                     nestedRules[nestedField.name] = {
                         ...nestedField.rules,
-                        label: nestedField.label?.toLowerCase()
+                        label: nestedField.placeholder?.toLowerCase()
                     }
                 });
 
                 return {
                     name: item.name,
-                    label: item.label?.toLowerCase(),
+                    label: item.placeholder?.toLowerCase(),
                     rules: { object: true, ...nestedRules },
                 };
             }
@@ -197,7 +213,7 @@ export const customValidator = (fields: FieldConfig[]) => {
                 const nestedRules = extractRules(item.formArray);
                 return {
                     name: item.name,
-                    label: item.label,
+                    label: item.placeholder?.toLowerCase(),
                     rules: nestedRules,
                 };
             }

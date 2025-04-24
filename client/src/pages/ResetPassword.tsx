@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import useDynamicForm from "../components/useDynamicForm"
+import useDynamicForm from "../hooks/useDynamicForm"
 import { FieldConfig } from "../models/fieldConfig.interface"
 import { customValidator } from "../utils/validator"
 import { useResetPasswordMutation } from "../redux/apis/auth.api"

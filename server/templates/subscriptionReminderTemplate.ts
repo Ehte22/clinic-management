@@ -29,7 +29,7 @@ export const subscriptionReminderTemplate = ({ firstName, lastName, days }: Subs
         }
 
         .header {
-            background-color: #4F46E5;
+            background-color: #0777de;
             color: white;
             text-align: center;
             padding: 30px 20px;

@@ -1,6 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
+import { createCustomBaseQuery } from "./customBaseQuery.api"
+import { IPagination } from "../../models/pagination.interface"
 import { IUser } from "../../models/user.interface"
-import { createCustomBaseQuery } from "./customBaseQuery.api";
 
 const baseUrl = `${import.meta.env.VITE_BACKEND_URL}/api/v1/user`
 const customBaseQuery = createCustomBaseQuery(baseUrl)
@@ -11,7 +12,7 @@ export const userApi = createApi({
     tagTypes: ["user"],
     endpoints: (builder) => {
         return {
-            getUsers: builder.query<{ result: IUser[], totalPages: number }, Partial<{ page: number, limit: number, searchQuery: string, isFetchAll: boolean, selectedClinicId: string }>>({
+            getUsers: builder.query<{ result: IUser[], pagination: IPagination }, Partial<{ page: number, limit: number, searchQuery: string, isFetchAll: boolean, selectedClinic: string }>>({
                 query: (queryParams = {}) => {
                     return {
                         url: "/",
@@ -19,7 +20,7 @@ export const userApi = createApi({
                         params: queryParams
                     }
                 },
-                transformResponse: (data: { result: IUser[], totalPages: number }) => {
+                transformResponse: (data: { result: IUser[], pagination: IPagination }) => {
                     return data
                 },
                 transformErrorResponse: (error: { status: number, data: { message: string } }) => {
@@ -44,10 +45,10 @@ export const userApi = createApi({
                 providesTags: ["user"]
             }),
 
-            createUser: builder.mutation<{ message: string, result: IUser }, FormData>({
+            addUser: builder.mutation<{ message: string, result: IUser }, FormData>({
                 query: userData => {
                     return {
-                        url: "/add-user",
+                        url: "/add",
                         method: "POST",
                         body: userData
                     }
@@ -61,10 +62,10 @@ export const userApi = createApi({
                 invalidatesTags: ["user"]
             }),
 
-            updateUser: builder.mutation<string, { userData: FormData, id: string }>({
-                query: ({ userData, id }) => {
+            updateUser: builder.mutation<string, { id: string, userData: FormData }>({
+                query: ({ id, userData }) => {
                     return {
-                        url: `/update-user/${id}`,
+                        url: `/update/${id}`,
                         method: "PUT",
                         body: userData
                     }
@@ -78,12 +79,12 @@ export const userApi = createApi({
                 invalidatesTags: ["user"]
             }),
 
-            updateUserStatus: builder.mutation<string, { status: string, id: string }>({
-                query: (statusData) => {
+            updateUserStatus: builder.mutation<string, { id: string, status: string }>({
+                query: ({ id, status }) => {
                     return {
-                        url: `/update-status/${statusData.id}`,
+                        url: `/status/${id}`,
                         method: "PUT",
-                        body: statusData
+                        body: { status }
                     }
                 },
                 transformResponse: (data: { message: string }) => {
@@ -98,7 +99,7 @@ export const userApi = createApi({
             deleteUser: builder.mutation<string, string>({
                 query: (id) => {
                     return {
-                        url: `/delete-user/${id}`,
+                        url: `/delete/${id}`,
                         method: "PUT",
                     }
                 },
@@ -118,7 +119,7 @@ export const userApi = createApi({
 export const {
     useGetUsersQuery,
     useGetUserByIdQuery,
-    useCreateUserMutation,
+    useAddUserMutation,
     useUpdateUserMutation,
     useUpdateUserStatusMutation,
     useDeleteUserMutation

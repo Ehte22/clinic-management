@@ -1,11 +1,10 @@
-import React from "react"
+import { Box, CircularProgress } from '@mui/material'
 
-const Loader: React.FC<{ size?: number }> = ({ size = 6 }) => {
-
+const Loader = () => {
     return <>
-        <div className="flex justify-center items-center">
-            <div className={`animate-spin rounded-full h-${size} w-${size} border-t-2 border-b-2 border-indigo-600`}></div>
-        </div>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+            <CircularProgress color="secondary" />
+        </Box>
     </>
 }
 

@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom"
 import { useGetUserByIdQuery, useUpdateUserMutation } from "../../redux/apis/user.api"
 import { useEffect, useState } from "react"
-import useDynamicForm from "../../components/useDynamicForm"
+import useDynamicForm from "../../hooks/useDynamicForm"
 import { FieldConfig } from "../../models/fieldConfig.interface"
 import { CheckCircleIcon, PencilSquareIcon } from "@heroicons/react/16/solid"
 import { useSendOTPMutation, useVerifyOTPMutation } from "../../redux/apis/auth.api"

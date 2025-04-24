@@ -1,12 +1,12 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
-import { createContext, useEffect, useState } from "react"
+import { useEffect } from "react"
 import './i18n';
 import Clinics from "./pages/clinic/Clinics"
 import AddClinic from "./pages/clinic/AddClinic"
 import Users from "./pages/user/Users"
 import AddUser from "./pages/user/AddUser"
 import Medicines from "./pages/medicine/Medicines"
-import Layout from "./share/Layout"
+import Layout from "./components/Layout"
 import Profile from "./pages/user/Profile"
 import Invoice from "./pages/invoice/Invoice"
 import AddInvoice from "./pages/invoice/AddInvoice"
@@ -19,9 +19,7 @@ import AddDoctor from "./pages/doctor/AddDoctor"
 import AddAppointment from "./pages/appointment/AddAppointment"
 import ResetPassword from "./pages/ResetPassword"
 import ForgotPassword from "./pages/ForgotPassword"
-import Patient from "./pages/Patient"
 import Prescription from "./pages/prescription/Prescription"
-import PatientTable from "./components/patient/PatientTable"
 import Suppliers from "./pages/supplier/Suppliers"
 import AddSupplier from "./pages/supplier/AddSupplier"
 import SessionExpiredModal from "./components/SessionExpiredModal"
@@ -45,20 +43,38 @@ import { patientApi } from "./redux/apis/patientApi"
 import { prescriptionApi } from "./redux/apis/prescriptionApi"
 import { receptionistApi } from "./redux/apis/receptionistApi"
 import { userApi } from "./redux/apis/user.api"
+import { ImageContextProvider } from "./context/ImageContext";
+import { createTheme, ThemeProvider } from "@mui/material";
+import Patients from "./pages/patient/patients";
+import AddPatient from "./pages/Patient";
 
-interface ImagePreviewContextType {
-  previewImages: string[];
-  setPreviewImages: (images: string[]) => void;
-}
-export const ImagePreviewContext = createContext<ImagePreviewContextType>({
-  previewImages: [],
-  setPreviewImages: () => { }
+const theme = createTheme({
+  palette: {
+    mode: "light",
+    primary: { main: "#FFFFFF", contrastText: "#000000" },
+    secondary: { main: "#0772ed" },
+  },
+  // components: {
+  //   MuiTypography: {
+  //     styleOverrides: {
+  //       root: ({ theme }) => ({
+  //         color:
+  //           theme.palette.mode === "dark" ? "#ffffff" : "#000000",
+  //       }),
+  //     },
+  //   },
+  // },
+  breakpoints: { values: { xs: 0, sm: 600, md: 1000, lg: 1200, xl: 1536 } },
 })
 
 const App = () => {
-  const [previewImages, setPreviewImages] = useState<string[]>([])
-
   const dispatch = useDispatch()
+
+  const x = localStorage.getItem("user")
+  let user
+  if (x) {
+    user = JSON.parse(x || "")
+  }
 
   useEffect(() => {
 
@@ -91,83 +107,108 @@ const App = () => {
   }, [dispatch]);
 
   return <>
-    <ImagePreviewContext.Provider value={{ previewImages, setPreviewImages }}>
-      <BrowserRouter>
-        <SessionExpiredModal />
-        <Routes>
+    <ThemeProvider theme={theme}>
+      <ImageContextProvider>
+        <BrowserRouter>
+          <SessionExpiredModal />
+          <Routes>
 
-          {/* Super Admin */}
-          <Route path="/" element={<Layout />}>
+            {/* Super Admin */}
+            <Route path="/" element={<Layout />}>
 
-            {/* dashboards */}
-            <Route index element={<Protected roles={["Super Admin", "Clinic Admin"]} compo={<ErrorBoundary><ClinicAdminDashBoard /></ErrorBoundary>} />} />
-            <Route path="/dashboard" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><DashBoard /></ErrorBoundary>} />} />
+              {/* dashboards */}
+              <Route index element={<Protected roles={user?.role === "Super Admin" ? ["Super Admin"] : ["Clinic Admin", "Super Admin"]}
+                compo={user?.role === "Super Admin"
+                  ? <ErrorBoundary><DashBoard /> </ErrorBoundary>
+                  : <ErrorBoundary><ClinicAdminDashBoard /> </ErrorBoundary>} />}
+              />
+              <Route path="user-dashboard" element={<Protected roles={["Clinic Admin", "Super Admin"]} compo={<ErrorBoundary><ClinicAdminDashBoard /> </ErrorBoundary>} />} />
+              <Route path="admin" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><DashBoard /> </ErrorBoundary>} />} />
 
-            {/* user */}
-            <Route path="/users" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><Users /></ErrorBoundary>} />} />
-            <Route path="/add-user" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddUser /></ErrorBoundary>} />} />
-            <Route path="/update-user/:id" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddUser /></ErrorBoundary>} />} />
+              {/* user */}
+              <Route path="users">
+                <Route index element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><Users /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddUser /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddUser /></ErrorBoundary>} />} />
+              </Route>
 
-            {/* user profile */}
-            <Route path="/profile/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Profile /></ErrorBoundary>} />} />
+              {/* user profile */}
+              <Route path="/profile/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Profile /></ErrorBoundary>} />} />
 
-            {/* clinic */}
-            <Route path="/clinics" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><Clinics /></ErrorBoundary>} />} />
-            <Route path="/add-clinic" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddClinic /></ErrorBoundary>} />} />
-            <Route path="/update-clinic/:id" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddClinic /></ErrorBoundary>} />} />
+              {/* clinic */}
+              <Route path="clinics">
+                <Route index element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><Clinics /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddClinic /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin"]} compo={<ErrorBoundary><AddClinic /></ErrorBoundary>} />} />
+              </Route>
 
-            {/* medicine */}
-            <Route path="all-medicines" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Medicines /></ErrorBoundary>} />} />
-            <Route path="buy-med" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><SellMedicine /></ErrorBoundary>} />} />
-            <Route path="add-medicine" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddMedicine /></ErrorBoundary>} />} />
-            <Route path="update-medicine/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddMedicine /></ErrorBoundary>} />} />
+              {/* medicine */}
+              <Route path="buy-med" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><SellMedicine /></ErrorBoundary>} />} />
+              <Route path="medicines">
+                <Route index element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Medicines /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddMedicine /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddMedicine /></ErrorBoundary>} />} />
+              </Route>
 
-            {/* invoice */}
-            <Route path="invoice" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Invoice /></ErrorBoundary>} />} />
-            <Route path="add-invoice" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddInvoice /></ErrorBoundary>} />} />
-            <Route path="update-invoice/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddInvoice /></ErrorBoundary>} />} />
+              {/* invoice */}
+              <Route path="invoices">
+                <Route index element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Invoice /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddInvoice /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddInvoice /></ErrorBoundary>} />} />
 
-            {/* receptionist */}
-            <Route path="receptionist" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><Receptionist /></ErrorBoundary>} />} />
-            <Route path="add-receptionist" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><AddReceptionist /></ErrorBoundary>} />} />
-            <Route path="update-receptionist/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><AddReceptionist /></ErrorBoundary>} />} />
+              </Route>
+              {/* receptionist */}
+              <Route path="receptionists">
+                <Route index element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><Receptionist /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><AddReceptionist /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><AddReceptionist /></ErrorBoundary>} />} />
+              </Route>
 
-            {/* doctor */}
-            <Route path="/doctor" element={<Protected roles={["Super Admin", "Clinic Admin"]} compo={<ErrorBoundary><Doctor /></ErrorBoundary>} />} />
-            <Route path="/add-doctor" element={<Protected roles={["Super Admin", "Clinic Admin"]} compo={<ErrorBoundary><AddDoctor /></ErrorBoundary>} />} />
-            <Route path="/update-doctor/:id" element={<Protected roles={["Super Admin", "Clinic Admin"]} compo={<ErrorBoundary><AddDoctor /></ErrorBoundary>} />} />
+              {/* doctor */}
+              <Route path="doctors">
+                <Route index element={<Protected roles={["Super Admin", "Clinic Admin"]} compo={<ErrorBoundary><Doctor /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin", "Clinic Admin"]} compo={<ErrorBoundary><AddDoctor /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin", "Clinic Admin"]} compo={<ErrorBoundary><AddDoctor /></ErrorBoundary>} />} />
+              </Route>
 
-            {/* appointment */}
-            <Route path="/appointment" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Appointment /></ErrorBoundary>} />} />
-            <Route path="/add-appointment" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddAppointment /></ErrorBoundary>} />} />
-            <Route path="/update-appointment/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddAppointment /></ErrorBoundary>} />} />
+              {/* appointment */}
+              <Route path="appointments">
+                <Route index element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Appointment /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddAppointment /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddAppointment /></ErrorBoundary>} />} />
+              </Route>
 
-            {/* patient */}
-            <Route path="/patients" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><PatientTable /></ErrorBoundary>} />} />
-            <Route path="/patient" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Patient /></ErrorBoundary>} />} />
-            <Route path="/patient/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Patient /></ErrorBoundary>} />} />
+              {/* patient */}
+              <Route path="patients">
+                <Route element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Patients /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddPatient /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddPatient /></ErrorBoundary>} />} />
+              </Route>
 
-            {/* prescription */}
-            <Route path="/prescription" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><Prescription /></ErrorBoundary>} />} />
+              {/* prescription */}
+              <Route path="/prescription" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor"]} compo={<ErrorBoundary><Prescription /></ErrorBoundary>} />} />
 
-            {/* Supplier */}
-            <Route path="/suppliers" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Suppliers /></ErrorBoundary>} />} />
-            <Route path="/add-supplier" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddSupplier /></ErrorBoundary>} />} />
-            <Route path="/update-supplier/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddSupplier /></ErrorBoundary>} />} />
+              {/* Supplier */}
+              <Route path="suppliers">
+                <Route index element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><Suppliers /></ErrorBoundary>} />} />
+                <Route path="add" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddSupplier /></ErrorBoundary>} />} />
+                <Route path="update/:id" element={<Protected roles={["Super Admin", "Clinic Admin", "Doctor", "Receptionist"]} compo={<ErrorBoundary><AddSupplier /></ErrorBoundary>} />} />
+              </Route>
 
-          </Route>
+            </Route>
 
 
-          {/* auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route path="*" element={<PageNotFound />} />
+            {/* auth */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="*" element={<PageNotFound />} />
 
-        </Routes>
-      </BrowserRouter >
-    </ImagePreviewContext.Provider >
+          </Routes>
+        </BrowserRouter >
+      </ImageContextProvider>
+    </ThemeProvider >
   </>
 }
 

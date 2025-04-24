@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { customValidator } from '../../utils/validator'
-import useDynamicForm from '../../components/useDynamicForm'
+import useDynamicForm from '../../hooks/useDynamicForm'
 import { FieldConfig } from '../../models/fieldConfig.interface';
 import { ValidationRules } from '../../models/validationRules.interface';
 import { useGetDoctorByIdQuery, useUpdateDoctorMutation } from '../../redux/apis/doctor.api';

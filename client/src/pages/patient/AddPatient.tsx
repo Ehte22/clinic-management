@@ -1,13 +1,13 @@
 
 
 
-import useDynamicForm, { FieldConfig } from "../hooks/useDynamicForm";
-import { customValidator } from "../utils/validator";
-import { useAddCreatePatientMutation, useGetPatientByIdQuery, useUpdatePatientMutation, } from "../redux/apis/patientApi";
+import useDynamicForm, { FieldConfig } from "../../hooks/useDynamicForm";
+import { customValidator } from "../../utils/validator";
+import { useAddCreatePatientMutation, useGetPatientByIdQuery, useUpdatePatientMutation, } from "../../redux/apis/patientApi";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "../utils/toast";
-import { idbHelpers } from "../indexDB";
+import { toast } from "../../utils/toast";
+import { idbHelpers } from "../../indexDB";
 import { io } from "socket.io-client"
 import { format } from "date-fns";
 

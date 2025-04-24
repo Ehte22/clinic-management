@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import useDynamicForm from "../components/useDynamicForm"
+import useDynamicForm from "../hooks/useDynamicForm"
 import { FieldConfig } from "../models/fieldConfig.interface"
 import { useSignInMutation } from "../redux/apis/auth.api"
 import { customValidator } from "../utils/validator"

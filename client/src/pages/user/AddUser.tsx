@@ -1,61 +1,58 @@
-import useDynamicForm from "../../components/useDynamicForm"
-import { FieldConfig } from "../../models/fieldConfig.interface"
+import useDynamicForm, { FieldConfig } from "../../hooks/useDynamicForm"
 import { customValidator } from "../../utils/validator"
 import { useSendOTPMutation, useVerifyOTPMutation } from "../../redux/apis/auth.api"
-import { useContext, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "../../utils/toast"
-import { CheckCircleIcon } from "@heroicons/react/24/outline"
 import { useGetClinicsQuery } from "../../redux/apis/clinic.api"
 import { useNavigate, useParams } from "react-router-dom"
-import { useCreateUserMutation, useGetUserByIdQuery, useUpdateUserMutation } from "../../redux/apis/user.api"
-import { ImagePreviewContext } from "../../App"
+import { useAddUserMutation, useGetUserByIdQuery, useUpdateUserMutation } from "../../redux/apis/user.api"
 import { z } from "zod"
-import Loader from "../../components/Loader"
 import { idbHelpers } from "../../indexDB"
 import { IUser } from "../../models/user.interface"
+import { useImagePreview } from "../../context/ImageContext"
+import Toast from "../../components/Toast"
+import DataContainer, { DataContainerConfig } from "../../components/DataContainer"
+import { Box, Button, Divider, Grid2, Paper, TextField } from "@mui/material"
+import { textFieldStyles } from "../../components/Inputs"
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 const fields: FieldConfig[] = [
     {
         name: "firstName",
-        label: "First Name",
-        placeholder: "Enter First Name",
+        placeholder: "First Name",
         type: "text",
         rules: { required: true, min: 2, max: 16 }
     },
     {
         name: "lastName",
-        label: "Last Name",
-        placeholder: "Enter Last Name",
+        placeholder: "Last Name",
         type: "text",
         rules: { required: true, min: 2, max: 16 }
     },
     {
         name: "email",
-        label: "Email Address",
-        placeholder: "Enter Email Address",
+        placeholder: "Email Address",
         type: "text",
         rules: { required: true, email: true }
     },
     {
         name: "phone",
-        label: "Phone Number",
-        placeholder: "Enter Phone Number",
+        placeholder: "Phone Number",
         type: "text",
         rules: { required: true, pattern: /^[6-9]\d{9}$/ }
     },
     {
         name: "profile",
-        label: "Profile",
+        placeholder: "Profile",
         type: "file",
-        rules: { required: false, file: true }
+        rules: { required: false, file: true, maxSize: 10 }
     },
 
     {
         name: "role",
-        label: "Role",
+        placeholder: "Role",
         type: "select",
         options: [
-            { label: "Select Role", value: "", disabled: true },
             { label: "Clinic Admin", value: "Clinic Admin" },
             { label: "Doctor", value: "Doctor" },
             { label: "Receptionist", value: "Receptionist" }
@@ -81,22 +78,28 @@ const AddUser = () => {
     // hooks
     const navigate = useNavigate()
     const { id } = useParams()
-    const { setPreviewImages } = useContext(ImagePreviewContext)
+    const { setPreviewImages } = useImagePreview()
 
     // States
     const [OTP, setOTP] = useState("")
     const [updatedFields, setUpdatedFields] = useState<FieldConfig[]>([...fields]);
     const [user, setUser] = useState<IUser | null>(null)
+    const [showEmailError, setShowEmailError] = useState<boolean>(false)
 
     // Queries and Mutations
-    const [createUser, { data: registerData, isLoading: createUserLoading, error: registerErrorMessage, isSuccess: registerSuccess, isError: registerError }] = useCreateUserMutation()
-    const [updateUser, { data: updateUserMessage, isLoading: updateUserLoading, error: updateUserErrorMessage, isSuccess: updateUserSuccess, isError: updateUserError }] = useUpdateUserMutation()
+    const [createUser, { data: addData, isLoading: addLoading, error: addError, isSuccess: isAddSuccess, isError: isAddError }] = useAddUserMutation()
+    const [updateUser, { data: updateData, isLoading: updateLoading, error: updateError, isSuccess: isUpdateSuccess, isError: isUpdateError }] = useUpdateUserMutation()
     const [sendOtp, { data: otpSendMessage, isLoading: isSendOtpLoading, error: otpSendErrorMessage, isSuccess: otpSendSuccess, isError: otpSendError }] = useSendOTPMutation()
     const [verifyOtp, { data: otpVerifyMessage, isLoading: isVerifyOtpLoading, error: otpVerifyErrorMessage, isSuccess: otpVerifySuccess, isError: otpVerifyError }] = useVerifyOTPMutation()
     const { data: clinicData, isSuccess: getClinicsSuccess } = useGetClinicsQuery({ isFetchAll: true })
     const { data: userData } = useGetUserByIdQuery(id || "", {
         skip: !id || !navigator.onLine
     })
+
+    const config: DataContainerConfig = {
+        pageTitle: id ? "Edit User" : "Add User",
+        backLink: "../",
+    }
 
     // Function for send OTP
     const sendOTP = () => {
@@ -155,7 +158,7 @@ const AddUser = () => {
                     idbHelpers.update({ storeName: "users", endpoint: "user/update-user", _id: user._id, data: updatedData, isFormData: true })
                 }
             } else {
-                toast.showError("Please verify your email address")
+                setShowEmailError(true)
             }
 
         } else {
@@ -166,13 +169,13 @@ const AddUser = () => {
                     idbHelpers.add({ storeName: "users", endpoint: "user/add-clinic", data: { ...updatedData, status: "active" }, isFormData: true })
                 }
             } else {
-                toast.showError("Please verify your email address")
+                setShowEmailError(true)
             }
         }
     }
 
     // Dynamic Form Component
-    const { renderSingleInput, handleSubmit, getValues, disableField, setValue, reset } =
+    const { renderSingleInput, handleSubmit, getValues, errors, setValue, reset, disableField } =
         useDynamicForm({ schema, fields: updatedFields, onSubmit, defaultValues })
 
     useEffect(() => {
@@ -201,10 +204,9 @@ const AddUser = () => {
                 ...fields,
                 {
                     name: "clinicId",
-                    label: "Clinic",
-                    type: "searchSelect",
+                    placeholder: "Clinic",
+                    type: "autoComplete",
                     options: [
-                        { label: "Select Clinic", value: "", disabled: true },
                         ...clinics
                     ],
                     rules: { required: true }
@@ -215,46 +217,6 @@ const AddUser = () => {
         }
     }, [clinicData, getClinicsSuccess, fields]);
 
-
-    useEffect(() => {
-        if (otpSendSuccess) {
-            toast.showSuccess(otpSendMessage)
-        }
-
-        if (otpVerifySuccess) {
-            toast.showSuccess(otpVerifyMessage)
-            disableField('email', true)
-        }
-
-        if (registerSuccess) {
-            toast.showSuccess(registerData.message)
-            reset()
-            navigate("/users")
-        }
-
-        if (updateUserSuccess) {
-            toast.showSuccess(updateUserMessage)
-        }
-
-    }, [otpSendMessage, otpSendSuccess, otpVerifyMessage, otpVerifySuccess, registerData, registerSuccess, updateUserMessage, updateUserSuccess])
-
-    useEffect(() => {
-        if (otpSendError) {
-            toast.showError(otpSendErrorMessage as string)
-        }
-
-        if (otpVerifyError) {
-            toast.showError(otpVerifyErrorMessage as string)
-        }
-
-        if (registerError) {
-            toast.showError(registerErrorMessage as string)
-        }
-
-        if (updateUserError) {
-            toast.showError(updateUserErrorMessage as string)
-        }
-    }, [otpSendErrorMessage, otpSendError, otpVerifyErrorMessage, otpVerifyError, registerErrorMessage, registerError, updateUserError, updateUserErrorMessage])
 
     useEffect(() => {
         if (id && user) {
@@ -277,124 +239,156 @@ const AddUser = () => {
         }
     }, [id, user, clinicData])
 
+    useEffect(() => {
+        if (otpVerifySuccess) {
+            disableField("email", true)
+        }
+    }, [otpVerifySuccess])
+
+    useEffect(() => {
+        if (isAddSuccess) {
+            const timeout = setTimeout(() => {
+                navigate("/users")
+            }, 2000);
+            return () => clearTimeout(timeout)
+        }
+    }, [isAddSuccess])
+
+    useEffect(() => {
+        if (isUpdateSuccess) {
+            const timeout = setTimeout(() => {
+                navigate("/users")
+            }, 2000);
+            return () => clearTimeout(timeout)
+        }
+    }, [isUpdateSuccess])
+
+    useEffect(() => {
+        if (showEmailError) {
+            const timer = setTimeout(() => setShowEmailError(false), 2000)
+            return () => clearTimeout(timer)
+        }
+    }, [showEmailError])
+
     return <>
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8">
-            <div className="flex justify-between">
-                <h2 className="text-lg font-bold text-gray-900">{id ? "Update User" : "Add User"}</h2>
-                <button
-                    type="button"
-                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    onClick={() => navigate("/users")}
-                >
-                    Back
-                </button>
-            </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-                <div className="px-4 py-6 sm:p-8">
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        {isAddSuccess && <Toast type="success" message={addData?.message} />}
+        {isAddError && <Toast type="error" message={addError as string} />}
+
+        {isUpdateSuccess && <Toast type={updateData === "No Changes Detected" ? "info" : "success"} message={updateData as string} />}
+        {isUpdateError && <Toast type="error" message={updateError as string} />}
+
+        {otpSendSuccess && <Toast type="success" message={otpSendMessage} />}
+        {otpSendError && <Toast type="error" message={otpSendErrorMessage as string} />}
+
+        {otpVerifySuccess && <Toast type="success" message={otpVerifyMessage as string} />}
+        {otpVerifyError && <Toast type="error" message={otpVerifyErrorMessage as string} />}
+
+        {showEmailError && <Toast type="error" message={"Please verify your email address"} />}
+
+        <Box>
+            <DataContainer config={config} />
+            <Paper sx={{ mt: 2, pt: 4, pb: 3 }}>
+                <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+                    <Grid2 container columnSpacing={2} rowSpacing={3} sx={{ px: 3 }} >
 
                         {/* First Name */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("firstName")}
-                        </div>
+                        </Grid2>
 
                         {/* Last Name */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("lastName")}
-                        </div>
+                        </Grid2>
 
                         {/* Phone Number */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("phone")}
-                        </div>
+                        </Grid2>
 
                         {/* Email */}
-                        <div className="sm:col-span-6 xl:col-span-4">
-                            <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-                                <div className="sm:col-span-6 md:col-span-3">
+                        <Grid2 size={{ xs: 12, lg: 8 }}>
+                            <Grid2 container spacing={2}>
+                                <Grid2 size={{ xs: 12, sm: 6 }}>
                                     {renderSingleInput("email")}
-                                </div>
+                                </Grid2>
 
-                                {
-                                    otpVerifySuccess && !registerSuccess && <CheckCircleIcon
-                                        aria-hidden="true"
-                                        className="mt-8 size-8 text-teal-400" />
-                                }
+                                <Grid2 size={{ xs: 12, sm: 6 }} sx={{ display: "flex", alignItems: "center" }}>
 
-                                <div className="sm:col-span-6 md:col-span-3">
-                                    <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-                                        {otpSendSuccess && !otpVerifySuccess &&
-                                            <div className="sm:col-span-4 md:col-span-3">
-                                                <label htmlFor="email" className="block text-sm/6 font-medium text-gray-900">
-                                                    OTP
-                                                </label>
-                                                <div className="mt-2">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Enter OTP"
-                                                        className="block w-full rounded-md bg-white px-3 py-1.5 text-base  text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                                                        onChange={(e) => setOTP((e.target as HTMLInputElement).value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        }
+                                    <Grid2 container spacing={2}>
+                                        {otpVerifySuccess && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+                                                <CheckCircleIcon sx={{ color: "#00c979" }} />
+                                            </Box>
+                                        )}
+
+                                        {otpSendSuccess && !otpVerifySuccess && (
+                                            <Paper sx={{ marginTop: 2 }}>
+                                                <TextField
+                                                    fullWidth
+                                                    sx={textFieldStyles}
+                                                    label="OTP"
+                                                    placeholder="Enter OTP"
+                                                    onChange={(e) => setOTP(e.target.value)}
+                                                />
+                                            </Paper>
+                                        )}
 
                                         {!otpVerifySuccess &&
-                                            <div className={`sm:col-span-2 md:col-span-3 ${otpSendSuccess ? "sm:mt-8" : "md:mt-8"}`}>
-                                                {
-                                                    isSendOtpLoading || isVerifyOtpLoading
-                                                        ? <Loader />
-                                                        : <button
-                                                            type="button"
-                                                            onClick={otpSendSuccess ? verifyOTP : sendOTP}
-                                                            className="rounded-md bg-teal-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
-                                                        >
-                                                            Verify {otpSendSuccess ? "OTP" : "Email"}
-                                                        </button>
-                                                }
-                                            </div>
+                                            <Box sx={{ marginTop: errors.email?.message ? 0 : 2, display: "flex", alignItems: "center" }}>
+                                                <Button
+                                                    loading={isSendOtpLoading || isVerifyOtpLoading}
+                                                    variant="contained"
+                                                    color="success"
+                                                    onClick={otpSendSuccess ? verifyOTP : sendOTP}
+                                                    sx={{ textTransform: 'none', backgroundColor: "#0777de" }}
+                                                >
+                                                    Verify {otpSendSuccess ? "OTP" : "Email"}
+                                                </Button>
+                                            </Box>
                                         }
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                    </Grid2>
+                                </Grid2>
+                            </Grid2>
+                        </Grid2>
 
                         {/* Role */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("role")}
-                        </div>
+                        </Grid2>
 
                         {/* Clinic */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("clinicId")}
-                        </div>
+                        </Grid2>
 
                         {/* Profile */}
-                        <div className="sm:col-span-6">
+                        <Grid2 size={{ xs: 12 }}>
                             {renderSingleInput("profile")}
-                        </div>
-                    </div>
-                </div>
+                        </Grid2>
+                    </Grid2>
 
-                <div className="flex items-center justify-end gap-x-3 border-t border-gray-900/10 px-4 py-4 sm:px-8">
-                    {
-                        createUserLoading || updateUserLoading
-                            ? <Loader />
-                            : <>
-                                <button onClick={() => reset()} type="button" className="rounded-md bg-gray-400 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                                >
-                                    Save
-                                </button>
-                            </>
-                    }
-                </div>
-            </form >
-        </div >
+                    <Divider sx={{ mt: 4, mb: 3 }} />
+
+                    <Box sx={{ textAlign: "end", px: 3 }}>
+                        <Button
+                            type='button'
+                            onClick={() => { setPreviewImages([]), reset() }}
+                            variant='contained'
+                            sx={{ backgroundColor: "#F3F3F3", py: 0.65 }}>
+                            Reset
+                        </Button>
+                        <Button
+                            loading={id ? updateLoading : addLoading}
+                            type='submit'
+                            variant='contained'
+                            sx={{ ml: 2, background: "#0777de", color: "white", py: 0.65 }}>
+                            Save
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper >
+        </Box>
     </>
 
 }

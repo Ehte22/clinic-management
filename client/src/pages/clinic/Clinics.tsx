@@ -1,121 +1,96 @@
-import { useNavigate } from "react-router-dom"
-import { useGetClinicsQuery, useUpdateClinicStatusMutation } from "../../redux/apis/clinic.api"
-import { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
-import { toast } from "../../utils/toast";
-import TableData from "../../components/TableData";
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Loader from "../../components/Loader";
 import { format } from "date-fns";
 import { idbHelpers } from "../../indexDB";
 import { IClinic } from "../../models/clinic.interface";
 import { useDebounce } from "../../utils/useDebounce";
-
-const columns: ColumnDef<any>[] = [
-    {
-        header: "Name",
-        accessorKey: "name",
-        cell: (info) => info.getValue(),
-    },
-    {
-        header: "Phone Number",
-        accessorKey: "contactInfo",
-        cell: (info) => info.getValue(),
-    },
-    {
-        header: "City",
-        accessorKey: "city",
-        cell: (info) => info.getValue(),
-    },
-    {
-        header: "End Date",
-        cell: (info) => {
-            const row = info.row.original
-            const formattedDate = format(new Date(row.endDate), "dd-MM-yyyy");
-            return formattedDate
-        },
-    },
-    {
-        header: "Status",
-        accessorKey: "status",
-        cell: (info) => {
-            const row = info.row.original
-            const [updateClinicStatus, { data, error, isSuccess, isError }] = useUpdateClinicStatusMutation()
-
-            const updateStatus = () => {
-                const status = row.status === "active" ? "inactive" : "active"
-                if (!navigator.onLine) {
-                    toast.showInfo("You are offline")
-                } else {
-                    updateClinicStatus({ status, id: row._id })
-                }
-            }
-
-            useEffect(() => {
-                if (isSuccess) {
-                    toast.showSuccess(data)
-                }
-
-                if (isError) {
-                    toast.showError(error as string)
-                }
-            }, [data, error, isSuccess, isError])
-
-            return (
-                <button
-                    onClick={updateStatus}
-                    className={
-                        row.status === "active"
-                            ? "inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
-                            : "inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20"
-                    }
-                >
-                    {row.status === "active" && "Active"}
-                    {row.status === "inactive" && "Inactive"}
-                </button>
-            );
-        },
-    },
-    {
-        header: "Actions",
-        cell: (info) => {
-            const row = info.row.original;
-            const navigate = useNavigate()
-
-            return (
-                <button
-                    className="text-indigo-600 hover:text-indigo-900"
-                    onClick={() => navigate(`/update-clinic/${row._id}`)}
-                >
-                    Edit
-                </button>
-            );
-        },
-    },
-];
+import DataContainer, { DataContainerConfig } from "../../components/DataContainer";
+import ActionsMenu from "../../components/ActionsMenu";
+import Toast from "../../components/Toast";
+import { Chip, Paper, Stack } from "@mui/material";
+import { useGetClinicsQuery, useUpdateClinicStatusMutation } from "../../redux/apis/clinic.api";
 
 const Clinics = () => {
 
     // Hooks
-    const [pagination, setPagination] = useState<{ pageIndex: number, pageSize: number }>({ pageIndex: 0, pageSize: 10 });
+    const [clinics, setClinics] = useState<IClinic[]>([])
+    const [pagination, setPagination] = useState<{ page: number, pageSize: number }>({ page: 0, pageSize: 10 })
     const [searchQuery, setSearchQuery] = useState("");
-    const [tableData, setTableData] = useState<IClinic[]>([])
-    const navigate = useNavigate()
+
     const debouncedSearchQuery = useDebounce(searchQuery, 500)
+
+    const config: DataContainerConfig = {
+        pageTitle: "Clinics",
+        showAddBtn: true,
+        showRefreshButton: true,
+        showSearchBar: true,
+        onSearch: setSearchQuery,
+    }
 
     // Queries and Mutations
     const { data, isLoading, isSuccess } = useGetClinicsQuery({
-        page: pagination.pageIndex + 1,
+        page: pagination.page + 1,
         limit: pagination.pageSize,
         searchQuery: debouncedSearchQuery.toLowerCase()
     })
+    const [updateStatus, { data: statusMessage, error: statusError, isSuccess: statusUpdateSuccess, isError: statusUpdateError }] = useUpdateClinicStatusMutation()
+
+    const columns: GridColDef[] = [
+        { field: 'serialNo', headerName: 'Sr. No.', minWidth: 70, flex: 0.4 },
+        { field: 'name', headerName: 'Name', minWidth: 200, flex: 1 },
+        { field: 'contactInfo', headerName: 'Phone Number', minWidth: 170, flex: 1 },
+        { field: 'city', headerName: 'City', minWidth: 200, flex: 1 },
+        {
+            field: 'endData', headerName: 'Expiry Date', minWidth: 150, flex: 0.7,
+            valueGetter: (_, row) => {
+                const expiryDate = format(new Date(row.endDate), "dd-MM-yyyy")
+                return expiryDate
+            }
+        },
+        {
+            field: 'status', headerName: 'Status', minWidth: 150, flex: 0.8,
+            renderCell: (params) => {
+                const handleStatusChange = () => {
+                    updateStatus({ id: params.row._id, status: params.value === "active" ? "inactive" : "active" })
+                };
+                return <>
+                    <Stack direction="row" sx={{ height: "100%", display: "flex", alignItems: "center" }} >
+                        <Chip
+                            label={params.value === "active" ? "Active" : "Inactive"}
+                            color={params.value === "active" ? "success" : "error"}
+                            variant="outlined"
+                            onClick={handleStatusChange}
+                            sx={{ borderRadius: 1 }} />
+                    </Stack>
+                </>
+            }
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            minWidth: 100,
+            flex: 0.6,
+            sortable: false,
+            filterable: false,
+            renderCell: (params) => {
+                return <>
+                    <ActionsMenu id={params.row._id} showDelete={false} />
+                </>
+            }
+        }
+    ];
 
     const fetchData = async () => {
         const offlineData = await idbHelpers.getAll({ storeName: "clinics" });
         if (isSuccess && navigator.onLine) {
-            await idbHelpers.saveAll({ storeName: "clinics", data: data.result });
-            setTableData(data?.result);
+            const clinics = data.result.map((item, index) => {
+                return { ...item, serialNo: index + 1 }
+            })
+            await idbHelpers.saveAll({ storeName: "clinics", data: clinics });
+            setClinics(clinics);
         } else if (!navigator.onLine) {
-            setTableData(offlineData);
+            setClinics(offlineData);
         }
     };
 
@@ -124,56 +99,30 @@ const Clinics = () => {
     }, [isSuccess, data]);
 
     if (isLoading) {
-        return <div className="flex justify-center items-center h-screen -mt-20">
-            <Loader size={16} />
-        </div>
+        return <Loader />
     }
 
     return <>
+        {statusUpdateSuccess && <Toast type="success" message={statusMessage} />}
+        {statusUpdateError && <Toast type="error" message={statusError as string} />}
 
-        <div>
-            <div className="sm:flex items-center justify-center">
-                <div className="sm:flex-auto">
-                    <h2 className="text-lg font-bold text-gray-900">Clinics</h2>
-                </div>
-                <div className="mt-4 sm:ml-16 sm:mt-0 flex justify-between gap-5">
-
-                    <input
-                        type="text"
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search..."
-                        className="block w-80 h-10 rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                    />
-                    <button
-                        type="button"
-                        className="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                        onClick={() => navigate("/add-clinic")}
-                    >
-                        Add
-                    </button>
-                </div>
-            </div>
-
-            <div className="mt-8 flow-root">
-                <div className="overflow-x-auto sm:-mx-6 lg:-mx-8">
-                    <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-
-                        <TableData
-                            data={tableData}
-                            columns={columns}
-                            enableSorting={true}
-                            enableGlobalFilter={true}
-                            initialPagination={pagination}
-                            totalRows={data?.totalPages || 0}
-                            onPaginationChange={setPagination}
-                            onGlobalFilterChange={searchQuery}
-                            totalPages={data?.totalPages}
-                        />
-
-                    </div>
-                </div>
-            </div>
-        </div >
+        <DataContainer config={config} />
+        <Paper sx={{ width: '100%', mt: 2 }}>
+            <DataGrid
+                rows={clinics}
+                columns={columns}
+                loading={isLoading}
+                rowCount={data?.pagination.totalEntries || 0}
+                paginationMode='server'
+                pageSizeOptions={[5, 10, 20, 50]}
+                paginationModel={{ page: pagination.page, pageSize: pagination.pageSize }}
+                getRowId={(row) => row._id}
+                onPaginationModelChange={(params) => {
+                    setPagination({ page: params.page, pageSize: params.pageSize })
+                }}
+                sx={{ border: 0 }}
+            />
+        </Paper >
     </>
 }
 

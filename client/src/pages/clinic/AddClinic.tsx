@@ -1,91 +1,82 @@
-import { useContext, useEffect, useState } from "react"
-import useDynamicForm from "../../components/useDynamicForm"
-import { FieldConfig } from "../../models/fieldConfig.interface"
-import { useCreateClinicMutation, useGetClinicByIdQuery, useUpdateClinicMutation } from "../../redux/apis/clinic.api"
+import { useEffect, useState } from "react"
+import useDynamicForm, { FieldConfig } from "../../hooks/useDynamicForm"
 import { customValidator } from "../../utils/validator"
-import { toast } from "../../utils/toast"
 import { useNavigate, useParams } from "react-router-dom"
-import { ImagePreviewContext } from "../../App"
 import { z } from "zod"
-import Loader from "../../components/Loader"
 import { idbHelpers } from "../../indexDB"
 import { IClinic } from "../../models/clinic.interface"
+import { useImagePreview } from "../../context/ImageContext"
+import { Box, Button, Divider, Grid2, Paper } from "@mui/material"
+import DataContainer, { DataContainerConfig } from "../../components/DataContainer"
+import Toast from "../../components/Toast"
+import { useAddClinicMutation, useGetClinicByIdQuery, useUpdateClinicMutation } from "../../redux/apis/clinic.api"
 
 const fields: FieldConfig[] = [
     {
         name: "name",
-        label: "Clinic Name",
-        placeholder: "Enter Clinic Name",
+        placeholder: "Clinic Name",
         type: "text",
         rules: { required: true, min: 2, max: 50 }
     },
     {
         name: "contactInfo",
-        label: "Phone Number",
-        placeholder: "Enter Phone Number",
+        placeholder: "Phone Number",
         type: "text",
         rules: { required: true, pattern: /^[6-9]\d{9}$/ }
     },
     {
         name: "email",
-        label: "Email Address",
-        placeholder: "Enter Email Address",
+        placeholder: "Email Address",
         type: "text",
         rules: { required: false, email: true }
     },
     {
         name: "startDate",
-        label: "Start Date",
+        placeholder: "Start Date",
         type: "date",
         rules: { required: true }
     },
     {
         name: "endDate",
-        label: "End Date",
+        placeholder: "End Date",
         type: "date",
         rules: { required: true }
     },
     {
         name: "amount",
-        label: "Amount",
-        placeholder: "Enter Amount",
+        placeholder: "Amount",
         type: "text",
         rules: { required: true, number: true, pattern: /^\d+$/, patternMessage: "Only numbers are allowed" }
     },
     {
         name: "alternateContactInfo",
-        label: "Alternate Phone Number",
-        placeholder: "Enter Alternate Phone Number",
+        placeholder: "Alternate Phone Number",
         type: "text",
         rules: { required: false, pattern: /^[6-9]\d{9}$/ }
     },
     {
         name: "street",
-        label: "Street Address",
-        placeholder: "Enter Street Address",
+        placeholder: "Street Address",
         type: "text",
         rules: { required: true, min: 2, max: 500 }
     },
     {
         name: "city",
-        label: "City",
-        placeholder: "Enter City",
+        placeholder: "City",
         type: "text",
         rules: { required: true, min: 2, max: 100 }
     },
     {
         name: "state",
-        label: "State",
-        placeholder: "Enter State",
+        placeholder: "State",
         type: "text",
         rules: { required: true, min: 2, max: 100 }
     },
     {
         name: "country",
-        label: "Country",
+        placeholder: "Country",
         type: "select",
         options: [
-            { label: "Select Country", value: "", disabled: true },
             { label: "India", value: "India" },
             { label: "United States", value: "United States" },
             { label: "United Kingdom", value: "United Kingdom" },
@@ -96,6 +87,7 @@ const fields: FieldConfig[] = [
     {
         name: "logo",
         label: "Logo",
+        placeholder: "Logo",
         type: "file",
         rules: { required: false, file: true, maxSize: 10 }
     },
@@ -117,19 +109,24 @@ const defaultValues = {
 }
 
 const AddClinic = () => {
-
-    // Hooks
-    const navigate = useNavigate()
-    const { id } = useParams()
-    const { setPreviewImages } = useContext(ImagePreviewContext)
     const [clinic, setClinic] = useState<IClinic | null>(null)
 
+    // Hooks
+    const { id } = useParams()
+    const { setPreviewImages } = useImagePreview()
+    const navigate = useNavigate()
+
     // Queries and Mutations
-    const [createClinic, { data: createData, isLoading: createClinicLoading, error: errorData, isSuccess: createSuccess, isError: createError }] = useCreateClinicMutation()
-    const { data: clinicData, isLoading, isFetching, error: getClinicErrorMessage, isError: getClinicError } = useGetClinicByIdQuery(id || "", {
+    const [createClinic, { data: addData, isLoading: addLoading, error: addError, isSuccess: isAddSuccess, isError: isAddError }] = useAddClinicMutation()
+    const { data: clinicData, isLoading, isFetching } = useGetClinicByIdQuery(id || "", {
         skip: !id || !navigator.onLine
     })
-    const [updateClinic, { data: updateMessage, isLoading: updateClinicLoading, error: updateErrorMessage, isSuccess: updateSuccess, isError: updateError }] = useUpdateClinicMutation()
+    const [updateClinic, { data: updateData, isLoading: updateLoading, error: updateError, isSuccess: isUpdateSuccess, isError: isUpdateError }] = useUpdateClinicMutation()
+
+    const config: DataContainerConfig = {
+        pageTitle: id ? "Edit Clinic" : "Add Clinic",
+        backLink: "../",
+    }
 
     // Custom Validator
     const schema = customValidator(fields)
@@ -186,7 +183,6 @@ const AddClinic = () => {
 
     useEffect(() => {
         if (id && clinic) {
-            console.log(clinic);
 
             setValue("name", clinic.name)
             setValue("contactInfo", clinic.contactInfo.toString() || "")
@@ -216,127 +212,119 @@ const AddClinic = () => {
     }, [id, clinic])
 
     useEffect(() => {
-        if (createSuccess) {
-            toast.showSuccess(createData.message)
-            setPreviewImages([])
-            reset()
-            navigate("/clinics")
+        if (isAddSuccess) {
+            const timeout = setTimeout(() => {
+                navigate("/clinics")
+            }, 2000);
+            return () => clearTimeout(timeout)
         }
-        if (updateSuccess) {
-            toast.showSuccess(updateMessage)
-        }
+    }, [isAddSuccess])
 
-        if (createError) {
-            toast.showError(errorData as string)
+    useEffect(() => {
+        if (isUpdateSuccess) {
+            const timeout = setTimeout(() => {
+                navigate("/clinics")
+            }, 2000);
+            return () => clearTimeout(timeout)
         }
-
-        if (getClinicError) {
-            toast.showError(getClinicErrorMessage as string)
-        }
-
-        if (updateError) {
-            toast.showError(updateErrorMessage as string)
-        }
-    }, [createData, createSuccess, errorData, createError, getClinicError, getClinicErrorMessage, updateError, updateSuccess, updateMessage, updateErrorMessage])
+    }, [isUpdateSuccess])
 
     return <>
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8">
-            <div className="flex justify-between">
-                <h2 className="text-lg font-bold text-gray-900">{id ? "Update Clinic" : "Add Clinic"}</h2>
-                <button
-                    type="button"
-                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    onClick={() => navigate("/clinics")}
-                >
-                    Back
-                </button>
-            </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-                <div className="px-4 py-6 sm:p-8">
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        {isAddSuccess && <Toast type="success" message={addData?.message} />}
+        {isAddError && <Toast type="error" message={addError as string} />}
 
-                        {/* Clinic Name */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+        {isUpdateSuccess && <Toast type={updateData === "No Changes Detected" ? "info" : "success"} message={updateData as string} />}
+        {isUpdateError && <Toast type="error" message={updateError as string} />}
+
+        <Box>
+            <DataContainer config={config} />
+            <Paper sx={{ mt: 2, pt: 4, pb: 3 }}>
+                <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+                    <Grid2 container columnSpacing={2} rowSpacing={3} sx={{ px: 3 }} >
+
+                        {/* Name */}
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("name")}
-                        </div>
+                        </Grid2>
 
                         {/* Contact Info */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("contactInfo")}
-                        </div>
+                        </Grid2>
 
                         {/* Email */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("email")}
-                        </div>
+                        </Grid2>
 
                         {/* Start Date */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("startDate")}
-                        </div>
+                        </Grid2>
 
                         {/* End Date */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("endDate")}
-                        </div>
+                        </Grid2>
 
                         {/* Amount */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("amount")}
-                        </div>
+                        </Grid2>
 
                         {/* Alternate Phone Number */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("alternateContactInfo")}
-                        </div>
+                        </Grid2>
 
                         {/* Street Address */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("street")}
-                        </div>
+                        </Grid2>
 
                         {/* City */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("city")}
-                        </div>
+                        </Grid2>
 
                         {/* State */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("state")}
-                        </div>
+                        </Grid2>
 
                         {/* Country */}
-                        <div className="sm:col-span-3 xl:col-span-2">
+                        <Grid2 size={{ xs: 12, sm: 6, lg: 4 }}>
                             {renderSingleInput("country")}
-                        </div>
+                        </Grid2>
 
                         {/* Logo */}
-                        <div className="sm:col-span-6">
+                        <Grid2 size={{ xs: 12 }}>
                             {renderSingleInput("logo")}
-                        </div>
+                        </Grid2>
 
-                    </div>
-                </div>
+                    </Grid2>
 
-                <div className="flex items-center justify-end gap-x-3 border-t border-gray-900/10 px-4 py-4 sm:px-8">
-                    {
-                        createClinicLoading || updateClinicLoading
-                            ? <Loader />
-                            : <>
-                                <button onClick={() => reset()} type="button" className="rounded-md bg-gray-400 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                                >
-                                    Save
-                                </button>
-                            </>
-                    }
-                </div>
-            </form>
-        </div>
+                    <Divider sx={{ mt: 4, mb: 3 }} />
+
+                    <Box sx={{ textAlign: "end", px: 3 }}>
+                        <Button
+                            type='button'
+                            onClick={() => { setPreviewImages([]), reset() }}
+                            variant='contained'
+                            sx={{ backgroundColor: "#F3F3F3", py: 0.65 }}>
+                            Reset
+                        </Button>
+                        <Button
+                            loading={id ? updateLoading : addLoading}
+                            type='submit'
+                            variant='contained'
+                            sx={{ ml: 2, background: "#0777de", color: "white", py: 0.65 }}>
+                            Save
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper >
+        </Box>
     </>
 }
 

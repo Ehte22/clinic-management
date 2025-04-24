@@ -1,13 +1,14 @@
-import React, { ChangeEvent, useContext, useEffect, useState } from 'react';
-import { PhotoIcon } from '@heroicons/react/16/solid';
-import { FieldValues, UseFormSetValue } from 'react-hook-form';
-import { IFieldProps } from './useDynamicForm';
-import { ImagePreviewContext } from '../App';
+import React, { ChangeEvent, useEffect, useState } from "react";
+import { Box, Typography, Button, IconButton, Paper, Grid2 } from "@mui/material";
+import BurstModeIcon from '@mui/icons-material/BurstMode';
+import { FieldValues, UseFormSetValue } from "react-hook-form";
+import { IFieldProps } from "../hooks/useDynamicForm";
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import { useImagePreview } from "../context/ImageContext";
 
 const InputFile: React.FC<IFieldProps> = ({ field, setValue }) => {
     const [isDragging, setIsDragging] = useState(false);
-
-    const { previewImages, setPreviewImages } = useContext(ImagePreviewContext)
+    const { previewImages, setPreviewImages } = useImagePreview()
 
     const handleChange = <T extends FieldValues>(
         e: ChangeEvent<HTMLInputElement>,
@@ -20,27 +21,22 @@ const InputFile: React.FC<IFieldProps> = ({ field, setValue }) => {
         if (files && files.length > 0) {
             setValue(name as any, files as any, { shouldValidate: true });
 
-            if (multiple) {
-                const newPreviews = Array.from(files).map((file) => URL.createObjectURL(file));
-                setPreviewImages([...previewImages, ...newPreviews]);
-            } else {
-                setPreviewImages([URL.createObjectURL(files[0])])
-            }
+            const newPreviews = Array.from(files).map((file) =>
+                URL.createObjectURL(file)
+            );
+            setPreviewImages(multiple ? [...previewImages, ...newPreviews] : newPreviews);
         }
     };
 
-    // Handle drag over event
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(true);
     };
 
-    // Handle drag leave event
     const handleDragLeave = () => {
         setIsDragging(false);
     };
 
-    // Handle file drop event
     const handleDrop = <T extends FieldValues>(
         e: React.DragEvent<HTMLDivElement>,
         name: string,
@@ -54,73 +50,83 @@ const InputFile: React.FC<IFieldProps> = ({ field, setValue }) => {
         if (files && files.length > 0) {
             setValue(name as any, files as any, { shouldValidate: true });
 
-            if (multiple) {
-                const newPreviews = Array.from(files).map((file) => URL.createObjectURL(file));
-                setPreviewImages([...previewImages, ...newPreviews]);
-            } else {
-                setPreviewImages([URL.createObjectURL(files[0])])
-            }
+            const newPreviews = Array.from(files).map((file) =>
+                URL.createObjectURL(file)
+            );
+            setPreviewImages(multiple ? [...previewImages, ...newPreviews] : newPreviews);
         }
     };
 
     useEffect(() => {
-        setPreviewImages([])
-    }, [])
-
+        setPreviewImages([]);
+    }, []);
 
     return (
-        <div className="col-span-full my-2">
-            <div
-                className={`flex flex-col justify-center items-center rounded-lg border border-dashed px-6 py-10 transition-all ${isDragging ? 'border-indigo-600 bg-indigo-100' : 'border-gray-900/25'
-                    }`}
+        <Paper>
+            <Box
+                sx={{
+                    borderRadius: "8px",
+                    p: 3,
+                    textAlign: "center",
+                    backgroundColor: isDragging ? "#f3f4ff" : "transparent",
+                    transition: "all 0.2s ease-in-out",
+                    cursor: "pointer",
+                }}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, field.name, field.multiple!, setValue!)}
             >
+                <IconButton color="primary">
+                    <BurstModeIcon sx={{ fontSize: 40, color: "lightgrey" }} />
+                </IconButton>
+                <Typography variant="body1" sx={{ my: 1 }}>
+                    Drag and drop a file here, or
+                </Typography>
+                <Box>
+                    <label htmlFor={field.name}>
+                        <input
+                            type="file"
+                            id={field.name}
+                            onChange={(e) => setValue && handleChange(e, field.name, field.multiple!, setValue)}
+                            style={{ display: "none" }}
+                            accept={field.accept || "*"}
+                            multiple={field.multiple || false}
+                        />
+                        <Button variant="contained" size="small" component="span" sx={{ my: 1, background: "#0772ed", color: "white" }}>
+                            <FileUploadIcon fontSize="small" sx={{ color: "white", marginRight: 1 }} />
+                            Upload File
+                        </Button>
+                    </label>
+                </Box>
 
-                <div className="text-center">
-                    <PhotoIcon aria-hidden="true" className="mx-auto size-12 text-gray-300" />
-                    <div className="mt-4 flex text-sm text-gray-600">
-                        <label
-                            htmlFor={field.name}
-                            className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
-                        >
-                            <span>Upload a file</span>
-                            <input
-                                type="file"
-                                id={field.name}
-                                onChange={(e) => {
-                                    if (setValue) {
-                                        handleChange(e, field.name, field.multiple!, setValue);
-                                    }
-                                }}
-                                className="sr-only"
-                                accept={field.accept || '*'}
-                                multiple={field.multiple || false}
-                            />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-600">PNG, JPG, GIF up to 10MB</p>
-                </div>
+                <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+                    PNG, JPG, GIF up to 10MB
+                </Typography>
 
-                {previewImages.length > 0 && (
-                    <div className="grid grid-cols-4 gap-4 mt-4">
-                        {previewImages.map((image, index) => (
+                {previewImages.length > 0 &&
+                    <Grid2 container spacing={2} >
+                        {previewImages.map((image, index) => <Grid2 key={index} size={{ xs: 6, sm: 4, lg: 3, xl: 2 }}>
                             <img
-                                key={index}
                                 src={image}
                                 alt={`preview-${index}`}
-                                className="w-28 h-24 object-cover rounded-md shadow-md"
+                                style={{
+                                    width: "100%",
+                                    height: "150px",
+                                    objectFit: "cover",
+                                    borderRadius: "8px",
+                                    boxShadow: "0px 0px 5px rgba(0,0,0,0.2)",
+                                }}
                             />
-                        ))}
-                    </div>
-                )}
+                        </Grid2>
+                        )}
+                    </Grid2>
+                }
 
-            </div>
-        </div>
+            </Box>
+
+
+        </Paper >
     );
 };
 
 export default InputFile;
-
